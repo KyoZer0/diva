@@ -74,58 +74,135 @@ class AdminController extends Controller
         return view('admin.rep-performance', compact('repStats'));
     }
 
+    /**
+     * Display analytics dashboard for admin.
+     * Admin sees ALL clients from ALL reps.
+     */
     public function analytics()
     {
-        // Get all clients for admin analytics
-        $clients = Client::with('user')->get();
-
-        // Analytics data
+        // Get ALL clients (admin can see everything)
+        $clients = Client::all();
+        
+        // Total clients
         $totalClients = $clients->count();
         
-        $sources = $clients->groupBy('source')->map(function ($group) {
-            return [
-                'count' => $group->count(),
-                'percentage' => 0
-            ];
-        })->toArray();
-
-        $totalForPercentage = array_sum(array_column($sources, 'count'));
-        foreach ($sources as &$source) {
-            $source['percentage'] = $totalForPercentage > 0 
-                ? round(($source['count'] / $totalForPercentage) * 100, 1) 
-                : 0;
+        // Clients by source with percentages
+        $sourcesData = $clients->groupBy('source')
+            ->map(function ($group) use ($totalClients) {
+                return [
+                    'count' => $group->count(),
+                    'percentage' => $totalClients > 0 ? round(($group->count() / $totalClients) * 100, 1) : 0
+                ];
+            })
+            ->sortByDesc('count')
+            ->toArray();
+        
+        // Translate source names
+        $sourceTranslations = [
+            'reseaux_sociaux' => 'Réseaux sociaux',
+            'publicite' => 'Publicité',
+            'recommandation' => 'Recommandation',
+            'passage_showroom' => 'Passage showroom',
+            'autre' => 'Autre',
+        ];
+        
+        $sources = [];
+        foreach ($sourcesData as $key => $data) {
+            $translatedKey = $sourceTranslations[$key] ?? ucfirst(str_replace('_', ' ', $key));
+            $sources[$translatedKey] = $data;
         }
-
-        $cities = $clients->where('city', '!=', null)
+        
+        // Top cities
+        $cities = $clients->whereNotNull('city')
+            ->where('city', '!=', '')
             ->groupBy('city')
-            ->map(fn($group) => $group->count())
+            ->map->count()
             ->sortDesc()
             ->take(10);
-
+        
         // Status distribution
-        $statusDistribution = $clients->groupBy('status')->map(fn($group) => $group->count())->toArray();
-
-        // Conversion rate calculation (leads to customers)
-        $totalLeads = $clients->where('status', 'lead')->count();
-        $totalCustomers = $clients->where('status', 'customer')->count();
-        $conversionRate = $totalLeads > 0 ? round(($totalCustomers / $totalLeads) * 100, 1) : 0;
-
-        // Rep performance data
+        $statusDistribution = $clients->groupBy('status')
+            ->map->count()
+            ->toArray();
+        
+        // Conversion rate (clients with devis_demande = true / total clients)
+        $devisRequested = $clients->where('devis_demande', true)->count();
+        $conversionRate = $totalClients > 0 ? round(($devisRequested / $totalClients) * 100, 1) : 0;
+        
+        // Products interest analysis
+        $productsInterest = [];
+        foreach ($clients as $client) {
+            if ($client->products && is_array($client->products)) {
+                foreach ($client->products as $product) {
+                    if (!isset($productsInterest[$product])) {
+                        $productsInterest[$product] = 0;
+                    }
+                    $productsInterest[$product]++;
+                }
+            }
+        }
+        arsort($productsInterest);
+        
+        // Translate product names
+        $productTranslations = [
+            'carrelage' => 'Carrelage',
+            'meubles' => 'Meubles',
+            'sanitaires' => 'Sanitaires',
+            'autre' => 'Autre',
+        ];
+        
+        $translatedProducts = [];
+        foreach ($productsInterest as $key => $count) {
+            $translatedKey = $productTranslations[$key] ?? ucfirst($key);
+            $translatedProducts[$translatedKey] = [
+                'count' => $count,
+                'percentage' => $totalClients > 0 ? round(($count / $totalClients) * 100, 1) : 0
+            ];
+        }
+        
+        // Client type distribution
+        $clientTypes = $clients->groupBy('client_type')
+            ->map->count()
+            ->toArray();
+        
+        // Recent activity (last 30 days)
+        $recentClients = $clients->where('created_at', '>=', now()->subDays(30))->count();
+        
+        // Clients with quotes
+        $clientsWithQuotes = $clients->where('devis_demande', true)->count();
+        
+        // ADMIN SPECIFIC: Rep performance stats
         $reps = User::whereHas('roles', function($query) {
             $query->where('name', 'rep');
-        })->with(['clients'])->get();
-
-        $repStats = $reps->map(function($rep) {
-            $clients = $rep->clients;
-            return [
+        })->get();
+        
+        $repStats = [];
+        foreach ($reps as $rep) {
+            $repClients = $clients->where('user_id', $rep->id);
+            $repStats[] = [
                 'rep' => $rep,
-                'total_clients' => $clients->count(),
-                'customers' => $clients->where('status', 'customer')->count(),
-                'prospects' => $clients->where('status', 'prospect')->count(),
-                'leads' => $clients->where('status', 'lead')->count(),
+                'total_clients' => $repClients->count(),
+                'clients_with_quotes' => $repClients->where('devis_demande', true)->count(),
+                'recent_clients' => $repClients->where('created_at', '>=', now()->subDays(30))->count(),
             ];
+        }
+        
+        // Sort by total clients
+        usort($repStats, function($a, $b) {
+            return $b['total_clients'] - $a['total_clients'];
         });
-
-        return view('analytics.index', compact('totalClients', 'sources', 'cities', 'statusDistribution', 'conversionRate', 'repStats'));
+        
+        return view('analytics.index', compact(
+            'totalClients',
+            'sources',
+            'cities',
+            'statusDistribution',
+            'conversionRate',
+            'translatedProducts',
+            'clientTypes',
+            'recentClients',
+            'clientsWithQuotes',
+            'repStats'
+        ));
     }
 }

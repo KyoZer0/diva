@@ -1,300 +1,151 @@
 @extends('layouts.app')
 
-@section('title', 'Client Details')
-@section('page-title', 'Client Details')
-@section('page-description', 'View detailed information and invoices for this client')
-
-@section('header-actions')
-    <div class="flex items-center space-x-3">
-        <a href="{{ route('clients.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
-            Back to Clients
-        </a>
-    </div>
-@endsection
+@section('title', 'Détails du client')
+@section('page-title', $client->full_name)
+@section('page-description', 'Informations, préférences et historique')
 
 @section('content')
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Client Information -->
-        <div class="lg:col-span-2">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-900">{{ $client->display_name }}</h3>
-                            <p class="text-sm text-gray-500">Client Information</p>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                {{ $client->client_type === 'company' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }}">
-                                {{ ucfirst($client->client_type) }}
-                            </span>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                {{ $client->status === 'customer' ? 'bg-green-100 text-green-800' : 
-                                   ($client->status === 'prospect' ? 'bg-yellow-100 text-yellow-800' : 
-                                   ($client->status === 'lead' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800')) }}">
-                                {{ ucfirst($client->status) }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Contact Information -->
-                        <div class="space-y-4">
-                            <h4 class="font-semibold text-gray-900">Contact Information</h4>
-                            <div class="space-y-3 text-sm">
-                                <div>
-                                    <span class="font-medium text-gray-700">Contact Person:</span>
-                                    <p class="text-gray-600">{{ $client->contact }}</p>
-                                </div>
-                                @if($client->phone)
-                                    <div>
-                                        <span class="font-medium text-gray-700">Phone:</span>
-                                        <p class="text-gray-600">{{ $client->phone }}</p>
-                                    </div>
-                                @endif
-                                @if($client->email)
-                                    <div>
-                                        <span class="font-medium text-gray-700">Email:</span>
-                                        <p class="text-gray-600">{{ $client->email }}</p>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
 
-                        <!-- Location Information -->
-                        <div class="space-y-4">
-                            <h4 class="font-semibold text-gray-900">Location</h4>
-                            <div class="space-y-3 text-sm">
-                                @if($client->city)
-                                    <div>
-                                        <span class="font-medium text-gray-700">City:</span>
-                                        <p class="text-gray-600">{{ $client->city }}</p>
-                                    </div>
-                                @endif
-                                @if($client->address)
-                                    <div>
-                                        <span class="font-medium text-gray-700">Address:</span>
-                                        <p class="text-gray-600">{{ $client->address }}</p>
-                                    </div>
-                                @endif
-                                @if($client->postal_code)
-                                    <div>
-                                        <span class="font-medium text-gray-700">Postal Code:</span>
-                                        <p class="text-gray-600">{{ $client->postal_code }}</p>
-                                    </div>
-                                @endif
-                                @if($client->country)
-                                    <div>
-                                        <span class="font-medium text-gray-700">Country:</span>
-                                        <p class="text-gray-600">{{ $client->country }}</p>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- Business Information -->
-                        <div class="space-y-4">
-                            <h4 class="font-semibold text-gray-900">Business Details</h4>
-                            <div class="space-y-3 text-sm">
-                                @if($client->company_name)
-                                    <div>
-                                        <span class="font-medium text-gray-700">Company:</span>
-                                        <p class="text-gray-600">{{ $client->company_name }}</p>
-                                    </div>
-                                @endif
-                                @if($client->contact_person)
-                                    <div>
-                                        <span class="font-medium text-gray-700">Contact Person:</span>
-                                        <p class="text-gray-600">{{ $client->contact_person }}</p>
-                                    </div>
-                                @endif
-                                @if($client->source)
-                                    <div>
-                                        <span class="font-medium text-gray-700">Source:</span>
-                                        <p class="text-gray-600">{{ $client->source }}</p>
-                                    </div>
-                                @endif
-                                @if($client->budget_range)
-                                    <div>
-                                        <span class="font-medium text-gray-700">Budget:</span>
-                                        <p class="text-gray-600">{{ number_format($client->budget_range, 0) }} MAD</p>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- Additional Information -->
-                        <div class="space-y-4">
-                            <h4 class="font-semibold text-gray-900">Additional Information</h4>
-                            <div class="space-y-3 text-sm">
-                                @if($client->likes)
-                                    <div>
-                                        <span class="font-medium text-gray-700">Preferences:</span>
-                                        <p class="text-gray-600">{{ $client->likes }}</p>
-                                    </div>
-                                @endif
-                                @if($client->notes)
-                                    <div>
-                                        <span class="font-medium text-gray-700">Notes:</span>
-                                        <p class="text-gray-600">{{ $client->notes }}</p>
-                                    </div>
-                                @endif
-                                @if($client->last_contact_date)
-                                    <div>
-                                        <span class="font-medium text-gray-700">Last Contact:</span>
-                                        <p class="text-gray-600">{{ \Carbon\Carbon::parse($client->last_contact_date)->format('M d, Y') }}</p>
-                                    </div>
-                                @endif
-                                <div>
-                                    <span class="font-medium text-gray-700">Added By:</span>
-                                    <p class="text-gray-600">{{ $client->user->name }}</p>
-                                </div>
-                                <div>
-                                    <span class="font-medium text-gray-700">Created:</span>
-                                    <p class="text-gray-600">{{ $client->created_at->format('M d, Y \a\t g:i A') }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row items-center justify-between bg-white rounded-2xl shadow-sm border border-neutral-200 p-8 mb-8">
+        <div class="flex items-center gap-6">
+            <div class="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-300 rounded-full flex items-center justify-center text-3xl font-semibold text-blue-700 shadow-inner">
+                {{ strtoupper(substr($client->full_name, 0, 1)) }}
             </div>
-
-            <!-- Client Invoices -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mt-6">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900">Client Invoices</h3>
-                    <p class="text-sm text-gray-500">All invoices for this client</p>
-                </div>
-                <div class="p-6">
-                    @if($invoices->count() > 0)
-                        <div class="space-y-4">
-                            @foreach($invoices as $invoice)
-                                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                                    <div class="flex justify-between items-start">
-                                        <div class="flex-1">
-                                            <div class="flex items-center space-x-3 mb-2">
-                                                <h4 class="font-semibold text-gray-900">{{ $invoice->invoice_number }}</h4>
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                                    {{ $invoice->status === 'paid' ? 'bg-green-100 text-green-800' : 
-                                                       ($invoice->status === 'sent' ? 'bg-blue-100 text-blue-800' : 
-                                                       ($invoice->status === 'overdue' ? 'bg-red-100 text-red-800' : 
-                                                       ($invoice->status === 'draft' ? 'bg-gray-100 text-gray-800' : 'bg-yellow-100 text-yellow-800'))) }}">
-                                                    {{ ucfirst($invoice->status) }}
-                                                </span>
-                                            </div>
-                                            
-                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                                <div>
-                                                    <span class="font-medium text-gray-700">Date:</span>
-                                                    <p class="text-gray-600">{{ $invoice->invoice_date->format('M d, Y') }}</p>
-                                                </div>
-                                                <div>
-                                                    <span class="font-medium text-gray-700">Amount:</span>
-                                                    <p class="text-gray-600 font-semibold">{{ number_format($invoice->amount, 2) }} {{ $invoice->currency }}</p>
-                                                </div>
-                                                <div>
-                                                    <span class="font-medium text-gray-700">Created By:</span>
-                                                    <p class="text-gray-600">{{ $invoice->user->name }}</p>
-                                                </div>
-                                            </div>
-                                            
-                                            @if($invoice->description)
-                                                <div class="mt-3">
-                                                    <span class="font-medium text-gray-700">Description:</span>
-                                                    <p class="text-gray-600 text-sm">{{ $invoice->description }}</p>
-                                                </div>
-                                            @endif
-                                        </div>
-                                        
-                                        <div class="flex items-center space-x-2">
-                                            <a href="{{ route('invoices.show', $invoice) }}" class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition-colors" title="View Invoice">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                                </svg>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="text-center py-8">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                            <h3 class="mt-2 text-sm font-medium text-gray-900">No invoices found</h3>
-                            <p class="mt-1 text-sm text-gray-500">This client doesn't have any invoices yet.</p>
-                        </div>
+            <div>
+                <h1 class="text-2xl font-bold text-neutral-900 mb-1">{{ $client->full_name }}</h1>
+                <p class="text-sm text-neutral-600 flex items-center gap-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium {{ $client->client_type === 'particulier' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
+                        {{ $client->client_type === 'particulier' ? 'Particulier' : 'Professionnel' }}
+                    </span>
+                    @if($client->status)
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+                            @switch($client->status)
+                                @case('purchased') bg-green-100 text-green-800 @break
+                                @case('follow_up') bg-orange-100 text-orange-800 @break
+                                @default bg-neutral-100 text-neutral-700
+                            @endswitch">
+                            {{ ucfirst($client->status) }}
+                        </span>
                     @endif
-                </div>
+                </p>
             </div>
         </div>
 
-        <!-- Sidebar -->
-        <div class="space-y-6">
-            <!-- Quick Actions -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900">Quick Actions</h3>
-                </div>
-                <div class="p-6 space-y-3">
-                    <a href="{{ route('invoices.create') }}?client_id={{ $client->id }}" class="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                        </svg>
-                        Create Invoice
-                    </a>
-                    
-                    <a href="{{ route('clients.index') }}" class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                        </svg>
-                        Back to Clients
-                    </a>
-                </div>
-            </div>
+    @if(auth()->user()->is_admin ?? false)
+        <div class="mt-6 md:mt-0">
+            <a href="{{ route('clients.edit', $client->id) }}"
+               class="inline-flex items-center px-5 py-2.5 bg-black text-white rounded-xl hover:bg-neutral-800 transition-all text-sm font-medium shadow-sm hover:shadow-md">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15.232 5.232l3.536 3.536M9 11l6-6 3 3-6 6H9v-3zM3 21h18"/>
+                </svg>
+                Modifier
+            </a>
+        </div>
+    @endif
+</div>
 
-            <!-- Client Stats -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900">Client Statistics</h3>
-                </div>
-                <div class="p-6 space-y-4">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Total Invoices</span>
-                        <span class="font-semibold text-gray-900">{{ $invoices->count() }}</span>
-                    </div>
-                    
-                    @if($invoices->count() > 0)
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">Total Amount</span>
-                            <span class="font-semibold text-gray-900">
-                                {{ number_format($invoices->sum('amount'), 2) }} MAD
-                            </span>
-                        </div>
-                        
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">Paid Invoices</span>
-                            <span class="font-semibold text-green-600">
-                                {{ $invoices->where('status', 'paid')->count() }}
-                            </span>
-                        </div>
-                        
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">Pending Invoices</span>
-                            <span class="font-semibold text-yellow-600">
-                                {{ $invoices->whereIn('status', ['sent', 'draft'])->count() }}
-                            </span>
-                        </div>
-                    @endif
-                </div>
-            </div>
+<!-- Info Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+    <!-- Contact Info -->
+    <div class="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm">
+        <h3 class="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8"/>
+            </svg>
+            Coordonnées
+        </h3>
+        <div class="space-y-3 text-sm">
+            <p><strong>Téléphone :</strong> {{ $client->phone }}</p>
+            @if($client->email) <p><strong>Email :</strong> {{ $client->email }}</p> @endif
+            @if($client->city) <p><strong>Ville :</strong> {{ $client->city }}</p> @endif
+            @if($client->company_name) <p><strong>Entreprise :</strong> {{ $client->company_name }}</p> @endif
         </div>
     </div>
+
+    <!-- Business Details -->
+    <div class="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm">
+        <h3 class="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745"/>
+            </svg>
+            Détails commerciaux
+        </h3>
+        <div class="space-y-3 text-sm">
+            @if($client->source)
+                <p><strong>Source :</strong> {{ ucfirst(str_replace('_', ' ', $client->source)) }}</p>
+            @endif
+            @if($client->conseiller)
+                <p><strong>Conseiller :</strong> {{ $client->conseiller }}</p>
+            @endif
+            <p><strong>Devis demandé :</strong>
+                {!! $client->devis_demande
+                    ? '<span class="text-green-600 font-medium">Oui</span>'
+                    : '<span class="text-neutral-500">Non</span>' !!}
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Produits d'intérêt -->
+@if($client->products)
+    <div class="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm mb-10">
+        <h3 class="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7v10l8 4"/>
+            </svg>
+            Produits d’intérêt
+        </h3>
+        <div class="flex flex-wrap gap-2">
+            @foreach($client->products as $product)
+                <span class="px-4 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium">
+                    {{ ucfirst($product) }}
+                </span>
+            @endforeach
+        </div>
+    </div>
+@endif
+
+<!-- Notes -->
+@if($client->notes)
+    <div class="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm mb-10">
+        <h3 class="text-lg font-semibold text-neutral-900 mb-3 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+            </svg>
+            Remarques
+        </h3>
+        <div class="p-4 bg-orange-50 rounded-xl border-l-4 border-orange-400 text-neutral-700 whitespace-pre-line">
+            {{ $client->notes }}
+        </div>
+    </div>
+@endif
+
+<!-- Timestamps -->
+<div class="text-xs text-neutral-500 text-right">
+    Créé le {{ $client->created_at->format('d/m/Y à H:i') }}
+    @if($client->updated_at->ne($client->created_at))
+        • Mis à jour le {{ $client->updated_at->format('d/m/Y à H:i') }}
+    @endif
+</div>
+```
+
+</div>
+
+<style>
+    .bg-white {
+        animation: fadeIn 0.5s ease forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
 @endsection

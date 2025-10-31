@@ -10,29 +10,26 @@ class Client extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
-        'client_type',
-        'company_name',
-        'contact_person',
-        'contact',
-        'phone',
-        'email',
-        'city',
-        'address',
-        'postal_code',
-        'country',
-        'source',
-        'likes',
-        'notes',
-        'status',
-        'budget_range',
-        'last_contact_date',
-        'user_id'
+    'user_id',
+    'full_name',
+    'client_type',
+    'company_name',
+    'phone',
+    'email',
+    'city',
+    'source',
+    'products',
+    'conseiller',
+    'devis_demande',
+    'notes',
+    'status',
+    'last_contact_date',
     ];
-
+    
     protected $casts = [
-        'budget_range' => 'decimal:2',
-        'last_contact_date' => 'date'
+        'products' => 'array',
+        'devis_demande' => 'boolean',
+        'last_contact_date' => 'date',
     ];
 
     public function user()
@@ -64,5 +61,13 @@ class Client extends Model
         ]);
         return implode(', ', $parts);
     }
+    public function getProductsAttribute($value)
+{
+    if (is_string($value)) {
+        $decoded = json_decode($value, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+    return $value ?: [];
+}
 
 }

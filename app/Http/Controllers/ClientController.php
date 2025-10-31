@@ -5,124 +5,246 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class ClientController extends Controller
 {
-    public function index(Request $request)
+    
+    use AuthorizesRequests;
+    /**
+     * Display a listing of the clients.
+     */
+    public function index()
     {
-        $query = Client::where('user_id', Auth::id());
-
-        // Filter by status
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        // Filter by client type
-        if ($request->filled('client_type')) {
-            $query->where('client_type', $request->client_type);
-        }
-
-        $clients = $query->orderBy('created_at', 'desc')->paginate(20);
-        
+        $clients = Client::where('user_id', Auth::id())->latest()->get();
         return view('clients.index', compact('clients'));
     }
 
+    /**
+     * Show the form for creating a new client.
+     */
+    public function create()
+    {
+        return view('clients.create');
+    }
+
+    /**
+     * Store a newly created client in storage.
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'client_type' => 'required|in:individual,company',
+            'full_name' => 'required|string|max:255',
+            'client_type' => 'required|in:particulier,professionnel',
             'company_name' => 'nullable|string|max:255',
-            'contact_person' => 'nullable|string|max:255',
-            'contact' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'required|string|max:50',
             'email' => 'nullable|email|max:255',
-            'city' => 'nullable|string|max:255',
-            'address' => 'nullable|string',
-            'postal_code' => 'nullable|string|max:10',
-            'country' => 'nullable|string|max:100',
+            'city' => 'nullable|string|max:100',
             'source' => 'nullable|string|max:255',
-            'likes' => 'nullable|string',
+            'products' => 'nullable|array',
+            'products.*' => 'string|max:255',
+            'conseiller' => 'nullable|string|max:255',
+            'devis_demande' => 'nullable|boolean',
             'notes' => 'nullable|string',
-            'status' => 'required|in:lead,prospect,customer,inactive',
-            'budget_range' => 'nullable|numeric|min:0',
-            'last_contact_date' => 'nullable|date'
+            'status' => 'nullable|in:visited,purchased,follow_up',
+            'last_contact_date' => 'nullable|date',
         ]);
 
-        $validated['user_id'] = Auth::id();
+        Client::create([
+            'user_id' => Auth::id(),
+            'full_name' => $validated['full_name'],
+            'client_type' => $validated['client_type'],
+            'company_name' => $validated['company_name'] ?? null,
+            'phone' => $validated['phone'],
+            'email' => $validated['email'] ?? null,
+            'city' => $validated['city'] ?? null,
+            'source' => $validated['source'] ?? null,
+            'products' => isset($validated['products']) ? json_encode($validated['products']) : null,
+            'conseiller' => $validated['conseiller'] ?? null,
+            'devis_demande' => $validated['devis_demande'] ?? false,
+            'notes' => $validated['notes'] ?? null,
+            'status' => $validated['status'] ?? 'visited',
+            'last_contact_date' => $validated['last_contact_date'] ?? null,
+        ]);
 
-        Client::create($validated);
-
-        return redirect()->route('clients.index')
-            ->with('success', 'Client added successfully!');
+        return redirect()->route('clients.index')->with('success', 'Client ajouté avec succès!');
     }
 
+    /**
+     * Display the specified client.
+     */
     public function show(Client $client)
     {
-        // Check if user can view this client
-        if ($client->user_id !== Auth::id() && !Auth::user()->isAdmin()) {
-            abort(403, 'Unauthorized access.');
-        }
-
-        // Load client with related data
-        $client->load(['user']);
-        
-        // Get invoices for this client
-        $invoices = \App\Models\Invoice::where('client_id', $client->id)
-            ->with('user')
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return view('clients.show', compact('client', 'invoices'));
+        return view('clients.show', compact('client'));
     }
 
+    /**
+     * Show the form for editing the specified client.
+     */
+    public function edit(Client $client)
+    {
+        return view('clients.edit', compact('client'));
+    }
+
+    /**
+     * Update the specified client in storage.
+     */
+    public function update(Request $request, Client $client)
+    {
+        $validated = $request->validate([
+            'full_name' => 'required|string|max:255',
+            'client_type' => 'required|in:particulier,professionnel',
+            'company_name' => 'nullable|string|max:255',
+            'phone' => 'required|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'city' => 'nullable|string|max:100',
+            'source' => 'nullable|string|max:255',
+            'products' => 'nullable|array',
+            'products.*' => 'string|max:255',
+            'conseiller' => 'nullable|string|max:255',
+            'devis_demande' => 'nullable|boolean',
+            'notes' => 'nullable|string',
+            'status' => 'nullable|in:visited,purchased,follow_up',
+            'last_contact_date' => 'nullable|date',
+        ]);
+
+        $client->update([
+            'full_name' => $validated['full_name'],
+            'client_type' => $validated['client_type'],
+            'company_name' => $validated['company_name'] ?? null,
+            'phone' => $validated['phone'],
+            'email' => $validated['email'] ?? null,
+            'city' => $validated['city'] ?? null,
+            'source' => $validated['source'] ?? null,
+            'products' => isset($validated['products']) ? json_encode($validated['products']) : null,
+            'conseiller' => $validated['conseiller'] ?? null,
+            'devis_demande' => $validated['devis_demande'] ?? false,
+            'notes' => $validated['notes'] ?? null,
+            'status' => $validated['status'] ?? 'visited',
+            'last_contact_date' => $validated['last_contact_date'] ?? null,
+        ]);
+
+        return redirect()->route('clients.index')->with('success', 'Client modifié avec succès!');
+    }
+
+    /**
+     * Remove the specified client from storage.
+     */
     public function destroy(Client $client)
     {
-        if ($client->user_id !== Auth::id() && !Auth::user()->isAdmin()) {
-            abort(403, 'Unauthorized access.');
-        }
-        
         $client->delete();
 
-        return redirect()->route('clients.index')
-            ->with('success', 'Client deleted successfully!');
+        return redirect()->route('clients.index')->with('success', 'Client supprimé avec succès!');
     }
 
+    /**
+     * Display analytics dashboard.
+     */
     public function analytics()
     {
-        $clients = Client::where('user_id', Auth::id())->get();
-
-        // Analytics data
+        $user = Auth::user();
+        
+        // Get all clients for this user
+        $clients = Client::where('user_id', $user->id)->get();
+        
+        // Total clients
         $totalClients = $clients->count();
         
-        $sources = $clients->groupBy('source')->map(function ($group) {
-            return [
-                'count' => $group->count(),
-                'percentage' => 0
-            ];
-        })->toArray();
-
-        $totalForPercentage = array_sum(array_column($sources, 'count'));
-        foreach ($sources as &$source) {
-            $source['percentage'] = $totalForPercentage > 0 
-                ? round(($source['count'] / $totalForPercentage) * 100, 1) 
-                : 0;
+        // Clients by source with percentages
+        $sourcesData = $clients->groupBy('source')
+            ->map(function ($group) use ($totalClients) {
+                return [
+                    'count' => $group->count(),
+                    'percentage' => $totalClients > 0 ? round(($group->count() / $totalClients) * 100, 1) : 0
+                ];
+            })
+            ->sortByDesc('count')
+            ->toArray();
+        
+        // Translate source names
+        $sourceTranslations = [
+            'reseaux_sociaux' => 'Réseaux sociaux',
+            'publicite' => 'Publicité',
+            'recommandation' => 'Recommandation',
+            'passage_showroom' => 'Passage showroom',
+            'autre' => 'Autre',
+        ];
+        
+        $sources = [];
+        foreach ($sourcesData as $key => $data) {
+            $translatedKey = $sourceTranslations[$key] ?? ucfirst(str_replace('_', ' ', $key));
+            $sources[$translatedKey] = $data;
         }
-
-        $cities = $clients->where('city', '!=', null)
+        
+        // Top cities
+        $cities = $clients->whereNotNull('city')
+            ->where('city', '!=', '')
             ->groupBy('city')
-            ->map(fn($group) => $group->count())
+            ->map->count()
             ->sortDesc()
             ->take(10);
-
+        
         // Status distribution
-        $statusDistribution = $clients->groupBy('status')->map(fn($group) => $group->count())->toArray();
-
-        // Conversion rate calculation (leads to customers)
-        $totalLeads = $clients->where('status', 'lead')->count();
-        $totalCustomers = $clients->where('status', 'customer')->count();
-        $conversionRate = $totalLeads > 0 ? round(($totalCustomers / $totalLeads) * 100, 1) : 0;
-
-        return view('analytics.index', compact('totalClients', 'sources', 'cities', 'statusDistribution', 'conversionRate'));
+        $statusDistribution = $clients->groupBy('status')
+            ->map->count()
+            ->toArray();
+        
+        // Conversion rate (clients with devis_demande = true / total clients)
+        $devisRequested = $clients->where('devis_demande', true)->count();
+        $conversionRate = $totalClients > 0 ? round(($devisRequested / $totalClients) * 100, 1) : 0;
+        
+        // Products interest analysis
+        $productsInterest = [];
+        foreach ($clients as $client) {
+            if ($client->products && is_array($client->products)) {
+                foreach ($client->products as $product) {
+                    if (!isset($productsInterest[$product])) {
+                        $productsInterest[$product] = 0;
+                    }
+                    $productsInterest[$product]++;
+                }
+            }
+        }
+        arsort($productsInterest);
+        
+        // Translate product names
+        $productTranslations = [
+            'carrelage' => 'Carrelage',
+            'meubles' => 'Meubles',
+            'sanitaires' => 'Sanitaires',
+            'autre' => 'Autre',
+        ];
+        
+        $translatedProducts = [];
+        foreach ($productsInterest as $key => $count) {
+            $translatedKey = $productTranslations[$key] ?? ucfirst($key);
+            $translatedProducts[$translatedKey] = [
+                'count' => $count,
+                'percentage' => $totalClients > 0 ? round(($count / $totalClients) * 100, 1) : 0
+            ];
+        }
+        
+        // Client type distribution
+        $clientTypes = $clients->groupBy('client_type')
+            ->map->count()
+            ->toArray();
+        
+        // Recent activity (last 30 days)
+        $recentClients = $clients->where('created_at', '>=', now()->subDays(30))->count();
+        
+        // Clients with quotes
+        $clientsWithQuotes = $clients->where('devis_demande', true)->count();
+        
+        return view('analytics.index', compact(
+            'totalClients',
+            'sources',
+            'cities',
+            'statusDistribution',
+            'conversionRate',
+            'translatedProducts',
+            'clientTypes',
+            'recentClients',
+            'clientsWithQuotes'
+        ));
     }
 }

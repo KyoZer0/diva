@@ -37,37 +37,52 @@ class RoleSeeder extends Seeder
             Role::create($roleData);
         }
 
-        // Create admin user
-        $admin = User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@divaceramica.com',
-            'password' => Hash::make('password123'),
-        ]);
-
-        // Assign admin role
+        // Get role instances
         $adminRole = Role::where('name', 'admin')->first();
-        $admin->roles()->attach($adminRole);
-
-        // Create sample rep user
-        $rep = User::create([
-            'name' => 'Sales Rep',
-            'email' => 'rep@divaceramica.com',
-            'password' => Hash::make('password123'),
-        ]);
-
-        // Assign rep role
         $repRole = Role::where('name', 'rep')->first();
-        $rep->roles()->attach($repRole);
+        $facturationRole = Role::where('name', 'facturation')->first();
 
-        // Create sample facturation user
+        // Create Sales Representatives
+        $reps = [
+            ['name' => 'Sekkat', 'email' => 'sekkat@divaceramica.com'],
+            ['name' => 'Khalid', 'email' => 'khalid@divaceramica.com'],
+            ['name' => 'Yousef', 'email' => 'yousef@divaceramica.com'],
+            ['name' => 'Yassir', 'email' => 'yassir@divaceramica.com'],
+            ['name' => 'Hatim', 'email' => 'hatim@divaceramica.com'],
+            ['name' => 'Oumaima', 'email' => 'oumaima@divaceramica.com'],
+        ];
+
+        foreach ($reps as $repData) {
+            $user = User::create([
+                'name' => $repData['name'],
+                'email' => $repData['email'],
+                'password' => Hash::make('password123'),
+            ]);
+            $user->roles()->attach($repRole);
+        }
+
+        // Create Admins
+        $admins = [
+            ['name' => 'Mery', 'email' => 'mery@divaceramica.com'],
+            ['name' => 'Mlhlou', 'email' => 'mlhlou@divaceramica.com'],
+            ['name' => 'IT', 'email' => 'it@divaceramica.com'],
+        ];
+
+        foreach ($admins as $adminData) {
+            $user = User::create([
+                'name' => $adminData['name'],
+                'email' => $adminData['email'],
+                'password' => Hash::make('password123'),
+            ]);
+            $user->roles()->attach($adminRole);
+        }
+
+        // Create Facturation User
         $facturation = User::create([
-            'name' => 'Facturation User',
-            'email' => 'facturation@divaceramica.com',
+            'name' => 'Hind',
+            'email' => 'hind@divaceramica.com',
             'password' => Hash::make('password123'),
         ]);
-
-        // Assign facturation role
-        $facturationRole = Role::where('name', 'facturation')->first();
         $facturation->roles()->attach($facturationRole);
     }
 }

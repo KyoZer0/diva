@@ -44,7 +44,7 @@
         @forelse($clients as $client)
             <a href="{{ route('clients.show', $client) }}" class="block bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow hover:bg-gray-50">
                 <div class="flex justify-between items-center mb-2">
-                    <h4 class="text-lg font-semibold text-gray-900">{{ $client->display_name }}</h4>
+                    <h4 class="text-lg font-semibold text-gray-900">{{ $client->full_name }}</h4>
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
                         {{ $client->client_type === 'company' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }}">
                         {{ ucfirst($client->client_type) }}
