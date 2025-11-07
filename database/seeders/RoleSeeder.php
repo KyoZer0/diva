@@ -25,11 +25,6 @@ class RoleSeeder extends Seeder
                 'name' => 'rep',
                 'display_name' => 'Sales Representative',
                 'description' => 'Can manage their own clients and view analytics'
-            ],
-            [
-                'name' => 'facturation',
-                'display_name' => 'Facturation',
-                'description' => 'Can manage invoices and view client data'
             ]
         ];
 
@@ -40,7 +35,6 @@ class RoleSeeder extends Seeder
         // Get role instances
         $adminRole = Role::where('name', 'admin')->first();
         $repRole = Role::where('name', 'rep')->first();
-        $facturationRole = Role::where('name', 'facturation')->first();
 
         // Create Sales Representatives
         $reps = [
@@ -76,13 +70,5 @@ class RoleSeeder extends Seeder
             ]);
             $user->roles()->attach($adminRole);
         }
-
-        // Create Facturation User
-        $facturation = User::create([
-            'name' => 'Hind',
-            'email' => 'hind@divaceramica.com',
-            'password' => Hash::make('password123'),
-        ]);
-        $facturation->roles()->attach($facturationRole);
     }
 }

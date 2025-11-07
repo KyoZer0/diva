@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\AdminController;
-use App\Http\Controllers\InvoiceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,8 +17,6 @@ Route::get('/', function () {
         // User is authenticated, redirect to appropriate dashboard
         if (auth()->user()->isAdmin()) {
             return redirect()->route('admin.dashboard');
-        } elseif (auth()->user()->isFacturation()) {
-            return redirect()->route('invoices.index');
         } else {
             return redirect()->route('clients.index');
         }
@@ -47,8 +44,6 @@ Route::middleware(['auth'])->group(function () {
 
         if ($user->isAdmin()) {
             return redirect()->route('admin.dashboard');
-        } elseif ($user->isFacturation()) {
-            return redirect()->route('invoices.index');
         } else {
             return redirect()->route('clients.index');
         }
@@ -56,6 +51,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Rep routes (reps and admins)
     Route::middleware(['role:rep,admin'])->group(function () {
+        Route::get('/clients/export', [ClientController::class, 'export'])->name('clients.export');
         Route::resource('clients', ClientController::class)->except(['edit', 'update']);
     });
 
@@ -70,10 +66,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/clients', [AdminController::class, 'allClients'])->name('clients');
         Route::get('/rep-performance', [AdminController::class, 'repPerformance'])->name('rep-performance');
         Route::get('/analytics', [AdminController::class, 'analytics'])->name('analytics');
-    });
-
-    // Invoice routes (facturation + admin)
-    Route::middleware(['role:facturation,admin'])->group(function () {
-        Route::resource('invoices', InvoiceController::class);
+        Route::get('/rep/{rep}/details', [AdminController::class, 'repDetails'])->name('rep-details');
     });
 });

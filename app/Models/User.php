@@ -71,14 +71,6 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if the user is a facturation user.
-     */
-    public function isFacturation()
-    {
-        return $this->hasRole('facturation');
-    }
-
-    /**
      * Check if the user is a sales representative.
      */
     public function isRep()

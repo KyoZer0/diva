@@ -14,10 +14,129 @@ class ClientController extends Controller
     /**
      * Display a listing of the clients.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $clients = Client::where('user_id', Auth::id())->latest()->get();
-        return view('clients.index', compact('clients'));
+        $query = Client::where('user_id', Auth::id());
+        
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%")
+                  ->orWhere('company_name', 'like', "%{$search}%")
+                  ->orWhere('city', 'like', "%{$search}%");
+            });
+        }
+        
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        
+        // Filter by client type
+        if ($request->filled('client_type')) {
+            $query->where('client_type', $request->client_type);
+        }
+        
+        // Filter by city
+        if ($request->filled('city')) {
+            $query->where('city', $request->city);
+        }
+        
+        // Filter by source
+        if ($request->filled('source')) {
+            $query->where('source', $request->source);
+        }
+        
+        // Sort
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $query->orderBy($sortBy, $sortOrder);
+        
+        $clients = $query->get();
+        
+        // Get unique cities and sources for filters
+        $cities = Client::where('user_id', Auth::id())
+            ->whereNotNull('city')
+            ->where('city', '!=', '')
+            ->distinct()
+            ->pluck('city')
+            ->sort();
+            
+        $sources = Client::where('user_id', Auth::id())
+            ->whereNotNull('source')
+            ->where('source', '!=', '')
+            ->distinct()
+            ->pluck('source')
+            ->sort();
+        
+        return view('clients.index', compact('clients', 'cities', 'sources'));
+    }
+    
+    /**
+     * Export clients to CSV
+     */
+    public function export()
+    {
+        $clients = Client::where('user_id', Auth::id())->get();
+        
+        $filename = 'clients_' . date('Y-m-d_H-i-s') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+        
+        $callback = function() use ($clients) {
+            $file = fopen('php://output', 'w');
+            
+            // Add UTF-8 BOM for Excel compatibility
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Headers
+            fputcsv($file, [
+                'Nom complet',
+                'Type',
+                'Entreprise',
+                'Téléphone',
+                'Email',
+                'Ville',
+                'Source',
+                'Produits',
+                'Conseiller',
+                'Devis demandé',
+                'Statut',
+                'Notes',
+                'Date ajout',
+                'Dernier contact'
+            ]);
+            
+            // Data
+            foreach ($clients as $client) {
+                fputcsv($file, [
+                    $client->full_name,
+                    $client->client_type,
+                    $client->company_name,
+                    $client->phone,
+                    $client->email,
+                    $client->city,
+                    $client->source,
+                    is_array($client->products) ? implode(', ', $client->products) : '',
+                    $client->conseiller,
+                    $client->devis_demande ? 'Oui' : 'Non',
+                    $client->status,
+                    $client->notes,
+                    $client->created_at->format('Y-m-d H:i:s'),
+                    $client->last_contact_date ? $client->last_contact_date->format('Y-m-d') : ''
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
     }
 
     /**

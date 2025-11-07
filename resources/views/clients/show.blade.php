@@ -2,150 +2,155 @@
 
 @section('title', 'Détails du client')
 @section('page-title', $client->full_name)
-@section('page-description', 'Informations, préférences et historique')
+@section('page-description', 'Informations du client')
 
 @section('content')
 
-<div class="max-w-6xl mx-auto">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row items-center justify-between bg-white rounded-2xl shadow-sm border border-neutral-200 p-8 mb-8">
-        <div class="flex items-center gap-6">
-            <div class="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-300 rounded-full flex items-center justify-center text-3xl font-semibold text-blue-700 shadow-inner">
-                {{ strtoupper(substr($client->full_name, 0, 1)) }}
-            </div>
-            <div>
-                <h1 class="text-2xl font-bold text-neutral-900 mb-1">{{ $client->full_name }}</h1>
-                <p class="text-sm text-neutral-600 flex items-center gap-2">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium {{ $client->client_type === 'particulier' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
-                        {{ $client->client_type === 'particulier' ? 'Particulier' : 'Professionnel' }}
-                    </span>
-                    @if($client->status)
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
-                            @switch($client->status)
-                                @case('purchased') bg-green-100 text-green-800 @break
-                                @case('follow_up') bg-orange-100 text-orange-800 @break
-                                @default bg-neutral-100 text-neutral-700
-                            @endswitch">
-                            {{ ucfirst($client->status) }}
-                        </span>
+<div class="max-w-5xl mx-auto">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{{ route('clients.index') }}" class="inline-flex items-center text-gray-600 hover:text-black transition-colors">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            <span class="font-medium">Retour à mes clients</span>
+        </a>
+    </div>
+
+    <!-- Header Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div class="flex items-start justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center text-2xl font-bold text-white">
+                    {{ strtoupper(substr($client->full_name, 0, 2)) }}
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-black">{{ $client->full_name }}</h1>
+                    @if($client->company_name)
+                        <p class="text-gray-600 mt-1">{{ $client->company_name }}</p>
                     @endif
-                </p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded">
+                            {{ $client->client_type === 'particulier' ? 'Particulier' : 'Professionnel' }}
+                        </span>
+                        @if($client->status)
+                            <span class="px-2 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded">
+                                @if($client->status === 'visited') A visité
+                                @elseif($client->status === 'purchased') Client
+                                @elseif($client->status === 'follow_up') À recontacter
+                                @else {{ ucfirst($client->status) }}
+                                @endif
+                            </span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="flex gap-2">
+                <a href="tel:{{ preg_replace('/\s+/', '', $client->phone) }}" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:border-black transition-all text-sm font-medium">
+                    Appeler
+                </a>
+                @if($client->email)
+                    <a href="mailto:{{ $client->email }}" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:border-black transition-all text-sm font-medium">
+                        Email
+                    </a>
+                @endif
+                <a href="https://wa.me/{{ preg_replace('/\D+/', '', $client->phone) }}" target="_blank" class="px-4 py-2 bg-amber-500 text-black rounded-lg hover:bg-amber-600 transition-all text-sm font-medium">
+                    WhatsApp
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Information Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Contact Information -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 class="font-bold text-gray-900 mb-4">Informations de contact</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-gray-500 font-medium">Téléphone</label>
+                    <p class="text-gray-900 font-medium">{{ $client->phone }}</p>
+                </div>
+                @if($client->email)
+                    <div>
+                        <label class="text-xs text-gray-500 font-medium">Email</label>
+                        <p class="text-gray-900 font-medium break-all">{{ $client->email }}</p>
+                    </div>
+                @endif
+                @if($client->city)
+                    <div>
+                        <label class="text-xs text-gray-500 font-medium">Ville</label>
+                        <p class="text-gray-900 font-medium">{{ $client->city }}</p>
+                    </div>
+                @endif
             </div>
         </div>
 
-    @if(auth()->user()->is_admin ?? false)
-        <div class="mt-6 md:mt-0">
-            <a href="{{ route('clients.edit', $client->id) }}"
-               class="inline-flex items-center px-5 py-2.5 bg-black text-white rounded-xl hover:bg-neutral-800 transition-all text-sm font-medium shadow-sm hover:shadow-md">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M15.232 5.232l3.536 3.536M9 11l6-6 3 3-6 6H9v-3zM3 21h18"/>
-                </svg>
-                Modifier
-            </a>
+        <!-- Business Information -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 class="font-bold text-gray-900 mb-4">Informations commerciales</h3>
+            <div class="space-y-3">
+                @if($client->source)
+                    <div>
+                        <label class="text-xs text-gray-500 font-medium">Source</label>
+                        <p class="text-gray-900 font-medium">{{ ucfirst(str_replace('_', ' ', $client->source)) }}</p>
+                    </div>
+                @endif
+                @if($client->conseiller)
+                    <div>
+                        <label class="text-xs text-gray-500 font-medium">Conseiller</label>
+                        <p class="text-gray-900 font-medium">{{ $client->conseiller }}</p>
+                    </div>
+                @endif
+                <div>
+                    <label class="text-xs text-gray-500 font-medium">Devis demandé</label>
+                    <p class="text-gray-900 font-medium">
+                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold {{ $client->devis_demande ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600' }}">
+                            {{ $client->devis_demande ? 'Oui' : 'Non' }}
+                        </span>
+                    </p>
+                </div>
+                @if($client->last_contact_date)
+                    <div>
+                        <label class="text-xs text-gray-500 font-medium">Dernier contact</label>
+                        <p class="text-gray-900 font-medium">{{ $client->last_contact_date->format('d/m/Y') }} ({{ $client->last_contact_date->diffForHumans() }})</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <!-- Products of Interest -->
+    @if($client->products && count($client->products) > 0)
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mt-6">
+            <h3 class="font-bold text-gray-900 mb-4">Produits d'intérêt</h3>
+            <div class="flex flex-wrap gap-2">
+                @foreach($client->products as $product)
+                    <span class="px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg text-sm font-medium">
+                        {{ ucfirst($product) }}
+                    </span>
+                @endforeach
+            </div>
         </div>
     @endif
-</div>
 
-<!-- Info Cards -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-    <!-- Contact Info -->
-    <div class="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm">
-        <h3 class="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
-            <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8"/>
-            </svg>
-            Coordonnées
-        </h3>
-        <div class="space-y-3 text-sm">
-            <p><strong>Téléphone :</strong> {{ $client->phone }}</p>
-            @if($client->email) <p><strong>Email :</strong> {{ $client->email }}</p> @endif
-            @if($client->city) <p><strong>Ville :</strong> {{ $client->city }}</p> @endif
-            @if($client->company_name) <p><strong>Entreprise :</strong> {{ $client->company_name }}</p> @endif
+    <!-- Notes -->
+    @if($client->notes)
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mt-6">
+            <h3 class="font-bold text-gray-900 mb-4">Notes</h3>
+            <div class="p-4 bg-gray-50 rounded-lg text-gray-700 whitespace-pre-line">{{ $client->notes }}</div>
         </div>
-    </div>
-
-    <!-- Business Details -->
-    <div class="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm">
-        <h3 class="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
-            <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745"/>
-            </svg>
-            Détails commerciaux
-        </h3>
-        <div class="space-y-3 text-sm">
-            @if($client->source)
-                <p><strong>Source :</strong> {{ ucfirst(str_replace('_', ' ', $client->source)) }}</p>
-            @endif
-            @if($client->conseiller)
-                <p><strong>Conseiller :</strong> {{ $client->conseiller }}</p>
-            @endif
-            <p><strong>Devis demandé :</strong>
-                {!! $client->devis_demande
-                    ? '<span class="text-green-600 font-medium">Oui</span>'
-                    : '<span class="text-neutral-500">Non</span>' !!}
-            </p>
-        </div>
-    </div>
-</div>
-
-<!-- Produits d'intérêt -->
-@if($client->products)
-    <div class="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm mb-10">
-        <h3 class="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
-            <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7v10l8 4"/>
-            </svg>
-            Produits d’intérêt
-        </h3>
-        <div class="flex flex-wrap gap-2">
-            @foreach($client->products as $product)
-                <span class="px-4 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium">
-                    {{ ucfirst($product) }}
-                </span>
-            @endforeach
-        </div>
-    </div>
-@endif
-
-<!-- Notes -->
-@if($client->notes)
-    <div class="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm mb-10">
-        <h3 class="text-lg font-semibold text-neutral-900 mb-3 flex items-center">
-            <svg class="w-5 h-5 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
-            </svg>
-            Remarques
-        </h3>
-        <div class="p-4 bg-orange-50 rounded-xl border-l-4 border-orange-400 text-neutral-700 whitespace-pre-line">
-            {{ $client->notes }}
-        </div>
-    </div>
-@endif
-
-<!-- Timestamps -->
-<div class="text-xs text-neutral-500 text-right">
-    Créé le {{ $client->created_at->format('d/m/Y à H:i') }}
-    @if($client->updated_at->ne($client->created_at))
-        • Mis à jour le {{ $client->updated_at->format('d/m/Y à H:i') }}
     @endif
-</div>
-```
 
+    <!-- Meta Information -->
+    <div class="mt-6 text-xs text-gray-500 text-center">
+        Ajouté le {{ $client->created_at->format('d/m/Y à H:i') }} par {{ $client->user->name }}
+        @if($client->updated_at->ne($client->created_at))
+            • Modifié le {{ $client->updated_at->format('d/m/Y à H:i') }}
+        @endif
+    </div>
 </div>
-
-<style>
-    .bg-white {
-        animation: fadeIn 0.5s ease forwards;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-</style>
 
 @endsection

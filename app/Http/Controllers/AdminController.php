@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\User;
-use App\Models\Invoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,7 +16,6 @@ class AdminController extends Controller
         $totalReps = User::whereHas('roles', function($query) {
             $query->where('name', 'rep');
         })->count();
-        $totalInvoices = Invoice::count();
 
         $recentClients = Client::with('user')
             ->orderBy('created_at', 'desc')
@@ -25,7 +23,7 @@ class AdminController extends Controller
             ->get();
 
         return view('admin.dashboard', compact(
-            'totalClients', 'totalReps', 'totalInvoices', 'recentClients'
+            'totalClients', 'totalReps', 'recentClients'
         ));
     }
 
@@ -184,6 +182,7 @@ class AdminController extends Controller
                 'total_clients' => $repClients->count(),
                 'clients_with_quotes' => $repClients->where('devis_demande', true)->count(),
                 'recent_clients' => $repClients->where('created_at', '>=', now()->subDays(30))->count(),
+                'purchased_clients' => $repClients->where('status', 'purchased')->count(),
             ];
         }
         
@@ -203,6 +202,88 @@ class AdminController extends Controller
             'recentClients',
             'clientsWithQuotes',
             'repStats'
+        ));
+    }
+
+    /**
+     * Display detailed analytics for a specific rep.
+     */
+    public function repDetails($repId)
+    {
+        $rep = User::findOrFail($repId);
+        
+        // Get all clients for this rep
+        $clients = Client::where('user_id', $repId)->get();
+        
+        // Total clients
+        $totalClients = $clients->count();
+        
+        // Clients by source with percentages
+        $sourcesData = $clients->groupBy('source')
+            ->map(function ($group) use ($totalClients) {
+                return [
+                    'count' => $group->count(),
+                    'percentage' => $totalClients > 0 ? round(($group->count() / $totalClients) * 100, 1) : 0
+                ];
+            })
+            ->sortByDesc('count')
+            ->toArray();
+        
+        // Translate source names
+        $sourceTranslations = [
+            'reseaux_sociaux' => 'Réseaux sociaux',
+            'publicite' => 'Publicité',
+            'recommandation' => 'Recommandation',
+            'passage_showroom' => 'Passage showroom',
+            'autre' => 'Autre',
+        ];
+        
+        $sources = [];
+        foreach ($sourcesData as $key => $data) {
+            $translatedKey = $sourceTranslations[$key] ?? ucfirst(str_replace('_', ' ', $key));
+            $sources[$translatedKey] = $data;
+        }
+        
+        // Top cities
+        $cities = $clients->whereNotNull('city')
+            ->where('city', '!=', '')
+            ->groupBy('city')
+            ->map->count()
+            ->sortDesc()
+            ->take(10);
+        
+        // Status distribution
+        $statusDistribution = $clients->groupBy('status')
+            ->map->count()
+            ->toArray();
+        
+        // Client type distribution
+        $clientTypes = $clients->groupBy('client_type')
+            ->map->count()
+            ->toArray();
+        
+        // Recent activity (last 30 days)
+        $recentClients = $clients->where('created_at', '>=', now()->subDays(30))->count();
+        
+        // Clients with quotes
+        $clientsWithQuotes = $clients->where('devis_demande', true)->count();
+        
+        // Recent 10 clients
+        $recentClientsList = Client::where('user_id', $repId)
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+        
+        return view('admin.rep-details', compact(
+            'rep',
+            'totalClients',
+            'sources',
+            'cities',
+            'statusDistribution',
+            'clientTypes',
+            'recentClients',
+            'clientsWithQuotes',
+            'recentClientsList'
         ));
     }
 }
