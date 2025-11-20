@@ -82,54 +82,159 @@
 
 				<hr class="border-neutral-200">
 
-				<!-- Produits d'intérêt - SIMPLIFIED -->
+				<!-- Produits d'intérêt -->
 				<div class="form-field">
 					<label class="block text-sm font-medium text-neutral-700 mb-3">Produits d'intérêt</label>
-					<div class="grid grid-cols-2 gap-3">
+					<div class="grid grid-cols-2 gap-3 mb-3">
 						<label class="custom-checkbox-card">
-							<input type="checkbox" name="products[]" value="carrelage" class="hidden checkbox-input">
+							<input type="checkbox" name="products[]" value="carrelage_sol" class="hidden checkbox-input">
 							<div class="checkbox-card-content">
 								<div class="checkbox-icon">
 									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
 									</svg>
 								</div>
-								<span class="text-sm font-medium">Carrelage</span>
+								<span class="text-sm font-medium">Carrelage sol</span>
 							</div>
 						</label>
 						<label class="custom-checkbox-card">
-							<input type="checkbox" name="products[]" value="meubles" class="hidden checkbox-input">
+							<input type="checkbox" name="products[]" value="carrelage_mural" class="hidden checkbox-input">
 							<div class="checkbox-card-content">
 								<div class="checkbox-icon">
 									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
 									</svg>
 								</div>
-								<span class="text-sm font-medium">Meubles</span>
+								<span class="text-sm font-medium">Carrelage mural</span>
 							</div>
 						</label>
 						<label class="custom-checkbox-card">
-							<input type="checkbox" name="products[]" value="sanitaires" class="hidden checkbox-input">
+							<input type="checkbox" name="products[]" value="sanitaire" class="hidden checkbox-input">
 							<div class="checkbox-card-content">
 								<div class="checkbox-icon">
 									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
 									</svg>
 								</div>
-								<span class="text-sm font-medium">Sanitaires</span>
+								<span class="text-sm font-medium">Sanitaire</span>
 							</div>
 						</label>
 						<label class="custom-checkbox-card">
-							<input type="checkbox" name="products[]" value="autre" class="hidden checkbox-input">
+							<input type="checkbox" name="products[]" value="meubles_salle_de_bain" class="hidden checkbox-input">
 							<div class="checkbox-card-content">
 								<div class="checkbox-icon">
 									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
 									</svg>
 								</div>
-								<span class="text-sm font-medium">Autre</span>
+								<span class="text-sm font-medium">Meubles de salle de bain</span>
 							</div>
 						</label>
+						<label class="custom-checkbox-card">
+							<input type="checkbox" name="products[]" value="robinets" class="hidden checkbox-input">
+							<div class="checkbox-card-content">
+								<div class="checkbox-icon">
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+									</svg>
+								</div>
+								<span class="text-sm font-medium">Robinets</span>
+							</div>
+						</label>
+						<label class="custom-checkbox-card">
+							<input type="checkbox" name="products[]" value="revetements_exterieurs" class="hidden checkbox-input">
+							<div class="checkbox-card-content">
+								<div class="checkbox-icon">
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+									</svg>
+								</div>
+								<span class="text-sm font-medium">Revêtements extérieurs</span>
+							</div>
+						</label>
+					</div>
+					<div class="mt-3">
+						<label class="custom-checkbox-card inline-block">
+							<input type="checkbox" name="products[]" value="autres_produits" id="autres_produits_checkbox" class="hidden checkbox-input">
+							<div class="checkbox-card-content">
+								<div class="checkbox-icon">
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+									</svg>
+								</div>
+								<span class="text-sm font-medium">Autres:</span>
+							</div>
+						</label>
+						<input type="text" name="products_autres" id="products_autres" 
+							class="ml-3 px-4 py-2 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-black focus:outline-none transition-all inline-block w-auto min-w-[200px]"
+							placeholder="Précisez...">
+					</div>
+				</div>
+
+				<!-- Style ou inspiration recherchée -->
+				<div class="form-field">
+					<label class="block text-sm font-medium text-neutral-700 mb-3">Style ou inspiration recherchée</label>
+					<div class="grid grid-cols-2 gap-3 mb-3">
+						<label class="custom-checkbox-card">
+							<input type="checkbox" name="style[]" value="moderne" class="hidden checkbox-input">
+							<div class="checkbox-card-content">
+								<div class="checkbox-icon">
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+									</svg>
+								</div>
+								<span class="text-sm font-medium">Moderne</span>
+							</div>
+						</label>
+						<label class="custom-checkbox-card">
+							<input type="checkbox" name="style[]" value="classique" class="hidden checkbox-input">
+							<div class="checkbox-card-content">
+								<div class="checkbox-icon">
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+									</svg>
+								</div>
+								<span class="text-sm font-medium">Classique</span>
+							</div>
+						</label>
+						<label class="custom-checkbox-card">
+							<input type="checkbox" name="style[]" value="contemporaine" class="hidden checkbox-input">
+							<div class="checkbox-card-content">
+								<div class="checkbox-icon">
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+									</svg>
+								</div>
+								<span class="text-sm font-medium">Contemporaine</span>
+							</div>
+						</label>
+						<label class="custom-checkbox-card">
+							<input type="checkbox" name="style[]" value="rustique" class="hidden checkbox-input">
+							<div class="checkbox-card-content">
+								<div class="checkbox-icon">
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+									</svg>
+								</div>
+								<span class="text-sm font-medium">Rustique</span>
+							</div>
+						</label>
+					</div>
+					<div class="mt-3">
+						<label class="custom-checkbox-card inline-block">
+							<input type="checkbox" name="style[]" value="autres_style" id="autres_style_checkbox" class="hidden checkbox-input">
+							<div class="checkbox-card-content">
+								<div class="checkbox-icon">
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+									</svg>
+								</div>
+								<span class="text-sm font-medium">Autres:</span>
+							</div>
+						</label>
+						<input type="text" name="style_autres" id="style_autres" 
+							class="ml-3 px-4 py-2 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-black focus:outline-none transition-all inline-block w-auto min-w-[200px]"
+							placeholder="Précisez...">
 					</div>
 				</div>
 
@@ -210,13 +315,26 @@
 					</div>
 				</div>
 
-				<!-- Conseiller -->
-				<div class="form-field">
-					<label class="block text-sm font-medium text-neutral-700 mb-2">Conseiller <span class="text-neutral-400 text-xs">(optionnel)</span></label>
-					<input type="text" name="conseiller" id="conseiller"
-						class="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-black focus:outline-none transition-all"
-						placeholder="Ex: Mohammed Alami">
-				</div>
+				<!-- Conseiller / Rep Assignment -->
+				@auth
+					@if(Auth::user()->isAdmin())
+						<!-- Admin: Dropdown to assign rep -->
+						<div class="form-field">
+							<label class="block text-sm font-medium text-neutral-700 mb-2">Assigner à un conseiller *</label>
+							<select name="assigned_rep_id" id="assigned_rep_id" required
+								class="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-black focus:outline-none transition-all">
+								<option value="">Sélectionner un conseiller</option>
+								@foreach($reps as $rep)
+									<option value="{{ $rep->id }}">{{ $rep->name }}</option>
+								@endforeach
+							</select>
+							<p class="text-xs text-neutral-400 mt-1">Le client sera assigné au conseiller sélectionné</p>
+						</div>
+					@else
+						<!-- Rep: Hidden field (auto-assigned) -->
+						<input type="hidden" name="conseiller" value="{{ Auth::user()->name }}">
+					@endif
+				@endauth
 
 				<!-- Notes -->
 				<div class="form-field">
@@ -476,7 +594,35 @@
 			});
 		});
 
-		// Form validation
+		// Handle "Autres" products text field
+		const autresProduitsCheckbox = document.getElementById('autres_produits_checkbox');
+		const productsAutresInput = document.getElementById('products_autres');
+		
+		if (autresProduitsCheckbox && productsAutresInput) {
+			autresProduitsCheckbox.addEventListener('change', function() {
+				productsAutresInput.disabled = !this.checked;
+				if (!this.checked) {
+					productsAutresInput.value = '';
+				}
+			});
+			productsAutresInput.disabled = !autresProduitsCheckbox.checked;
+		}
+
+		// Handle "Autres" style text field
+		const autresStyleCheckbox = document.getElementById('autres_style_checkbox');
+		const styleAutresInput = document.getElementById('style_autres');
+		
+		if (autresStyleCheckbox && styleAutresInput) {
+			autresStyleCheckbox.addEventListener('change', function() {
+				styleAutresInput.disabled = !this.checked;
+				if (!this.checked) {
+					styleAutresInput.value = '';
+				}
+			});
+			styleAutresInput.disabled = !autresStyleCheckbox.checked;
+		}
+
+		// Form validation and data processing
 		document.getElementById('clientForm').addEventListener('submit', function(e) {
 			const fullName = document.getElementById('full_name').value.trim();
 			const phone = document.getElementById('phone').value.trim();
@@ -486,6 +632,40 @@
 				e.preventDefault();
 				alert('Veuillez remplir tous les champs obligatoires (Type de client, Nom complet, Téléphone)');
 				return false;
+			}
+
+			// Process products: if "Autres" is checked and has text, add it to products array
+			if (autresProduitsCheckbox && autresProduitsCheckbox.checked && productsAutresInput.value.trim()) {
+				// Remove "autres_produits" from products array if it exists
+				const productsInputs = document.querySelectorAll('input[name="products[]"]:checked');
+				productsInputs.forEach(input => {
+					if (input.value === 'autres_produits') {
+						input.checked = false;
+					}
+				});
+				// Create a hidden input with the custom product value
+				const hiddenInput = document.createElement('input');
+				hiddenInput.type = 'hidden';
+				hiddenInput.name = 'products[]';
+				hiddenInput.value = 'Autres: ' + productsAutresInput.value.trim();
+				this.appendChild(hiddenInput);
+			}
+
+			// Process style: if "Autres" is checked and has text, add it to style array
+			if (autresStyleCheckbox && autresStyleCheckbox.checked && styleAutresInput.value.trim()) {
+				// Remove "autres_style" from style array if it exists
+				const styleInputs = document.querySelectorAll('input[name="style[]"]:checked');
+				styleInputs.forEach(input => {
+					if (input.value === 'autres_style') {
+						input.checked = false;
+					}
+				});
+				// Create a hidden input with the custom style value
+				const hiddenInput = document.createElement('input');
+				hiddenInput.type = 'hidden';
+				hiddenInput.name = 'style[]';
+				hiddenInput.value = 'Autres: ' + styleAutresInput.value.trim();
+				this.appendChild(hiddenInput);
 			}
 		});
 	</script>

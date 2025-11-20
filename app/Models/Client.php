@@ -19,6 +19,7 @@ class Client extends Model
     'city',
     'source',
     'products',
+    'style',
     'conseiller',
     'devis_demande',
     'notes',
@@ -28,6 +29,7 @@ class Client extends Model
     
     protected $casts = [
         'products' => 'array',
+        'style' => 'array',
         'devis_demande' => 'boolean',
         'last_contact_date' => 'date',
     ];
@@ -55,13 +57,4 @@ class Client extends Model
         ]);
         return implode(', ', $parts);
     }
-    public function getProductsAttribute($value)
-{
-    if (is_string($value)) {
-        $decoded = json_decode($value, true);
-        return is_array($decoded) ? $decoded : [];
-    }
-    return $value ?: [];
-}
-
 }

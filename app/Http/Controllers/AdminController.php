@@ -36,6 +36,18 @@ class AdminController extends Controller
             $query->where('user_id', $request->rep_id);
         }
 
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%")
+                  ->orWhere('company_name', 'like', "%{$search}%")
+                  ->orWhere('city', 'like', "%{$search}%");
+            });
+        }
+
         // Filter by status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -46,12 +58,65 @@ class AdminController extends Controller
             $query->where('client_type', $request->client_type);
         }
 
-        $clients = $query->orderBy('created_at', 'desc')->paginate(20);
+        // Filter by city
+        if ($request->filled('city')) {
+            $query->where('city', $request->city);
+        }
+
+        // Filter by source
+        if ($request->filled('source')) {
+            $query->where('source', $request->source);
+        }
+
+        // Sort
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $query->orderBy($sortBy, $sortOrder);
+
+        $clients = $query->get();
+
+        // Get unique cities and sources for filters
+        $cities = Client::whereNotNull('city')
+            ->where('city', '!=', '')
+            ->distinct()
+            ->pluck('city')
+            ->sort();
+            
+        $sources = Client::whereNotNull('source')
+            ->where('source', '!=', '')
+            ->distinct()
+            ->pluck('source')
+            ->sort();
+
         $reps = User::whereHas('roles', function($query) {
             $query->where('name', 'rep');
-        })->get();
+        })->orderBy('name')->get();
 
-        return view('admin.clients', compact('clients', 'reps'));
+        return view('admin.all-clients', compact('clients', 'reps', 'cities', 'sources'));
+    }
+
+    /**
+     * Display all reps
+     */
+    public function reps()
+    {
+        $reps = User::whereHas('roles', function($query) {
+            $query->where('name', 'rep');
+        })->with(['clients'])->orderBy('name')->get();
+
+        $repStats = $reps->map(function($rep) {
+            $clients = $rep->clients;
+
+            return [
+                'rep' => $rep,
+                'total_clients' => $clients->count(),
+                'purchased_clients' => $clients->where('status', 'purchased')->count(),
+                'recent_clients' => $clients->where('created_at', '>=', now()->subDays(30))->count(),
+                'clients_with_quotes' => $clients->where('devis_demande', true)->count(),
+            ];
+        });
+
+        return view('admin.reps', compact('repStats'));
     }
 
     public function repPerformance()
@@ -285,5 +350,146 @@ class AdminController extends Controller
             'clientsWithQuotes',
             'recentClientsList'
         ));
+    }
+
+    /**
+     * Export all clients to CSV (admin)
+     */
+    public function exportAllClients()
+    {
+        $clients = Client::with('user')->get();
+        
+        $filename = 'tous_les_clients_' . date('Y-m-d_H-i-s') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+        
+        $callback = function() use ($clients) {
+            $file = fopen('php://output', 'w');
+            
+            // Add UTF-8 BOM for Excel compatibility
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Headers
+            fputcsv($file, [
+                'Nom complet',
+                'Type',
+                'Entreprise',
+                'Téléphone',
+                'Email',
+                'Ville',
+                'Source',
+                'Produits',
+                'Style',
+                'Conseiller',
+                'Devis demandé',
+                'Statut',
+                'Notes',
+                'Date ajout',
+                'Dernier contact'
+            ]);
+            
+            // Data
+            foreach ($clients as $client) {
+                fputcsv($file, [
+                    $client->full_name,
+                    $client->client_type === 'particulier' ? 'Particulier' : 'Professionnel',
+                    $client->company_name ?? '',
+                    $client->phone,
+                    $client->email ?? '',
+                    $client->city ?? '',
+                    $client->source ? ucfirst(str_replace('_', ' ', $client->source)) : '',
+                    is_array($client->products) ? implode(', ', array_map(function($p) {
+                        return ucfirst(str_replace(['_', 'Autres: '], [' ', ''], $p));
+                    }, $client->products)) : '',
+                    is_array($client->style) ? implode(', ', array_map(function($s) {
+                        return ucfirst(str_replace(['_', 'Autres: '], [' ', ''], $s));
+                    }, $client->style)) : '',
+                    $client->user->name ?? '',
+                    $client->devis_demande ? 'Oui' : 'Non',
+                    $client->status === 'visited' ? 'A visité' : ($client->status === 'purchased' ? 'Client' : ($client->status === 'follow_up' ? 'À recontacter' : ucfirst($client->status))),
+                    $client->notes ?? '',
+                    $client->created_at->format('Y-m-d H:i:s'),
+                    $client->last_contact_date ? $client->last_contact_date->format('Y-m-d') : ''
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Export rep's clients to CSV
+     */
+    public function exportRepClients($repId)
+    {
+        $rep = User::findOrFail($repId);
+        $clients = Client::where('user_id', $repId)->get();
+        
+        $filename = 'clients_' . str_replace(' ', '_', $rep->name) . '_' . date('Y-m-d_H-i-s') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+        
+        $callback = function() use ($clients) {
+            $file = fopen('php://output', 'w');
+            
+            // Add UTF-8 BOM for Excel compatibility
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Headers
+            fputcsv($file, [
+                'Nom complet',
+                'Type',
+                'Entreprise',
+                'Téléphone',
+                'Email',
+                'Ville',
+                'Source',
+                'Produits',
+                'Style',
+                'Conseiller',
+                'Devis demandé',
+                'Statut',
+                'Notes',
+                'Date ajout',
+                'Dernier contact'
+            ]);
+            
+            // Data
+            foreach ($clients as $client) {
+                fputcsv($file, [
+                    $client->full_name,
+                    $client->client_type === 'particulier' ? 'Particulier' : 'Professionnel',
+                    $client->company_name ?? '',
+                    $client->phone,
+                    $client->email ?? '',
+                    $client->city ?? '',
+                    $client->source ? ucfirst(str_replace('_', ' ', $client->source)) : '',
+                    is_array($client->products) ? implode(', ', array_map(function($p) {
+                        return ucfirst(str_replace(['_', 'Autres: '], [' ', ''], $p));
+                    }, $client->products)) : '',
+                    is_array($client->style) ? implode(', ', array_map(function($s) {
+                        return ucfirst(str_replace(['_', 'Autres: '], [' ', ''], $s));
+                    }, $client->style)) : '',
+                    $client->conseiller ?? '',
+                    $client->devis_demande ? 'Oui' : 'Non',
+                    $client->status === 'visited' ? 'A visité' : ($client->status === 'purchased' ? 'Client' : ($client->status === 'follow_up' ? 'À recontacter' : ucfirst($client->status))),
+                    $client->notes ?? '',
+                    $client->created_at->format('Y-m-d H:i:s'),
+                    $client->last_contact_date ? $client->last_contact_date->format('Y-m-d') : ''
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
     }
 }

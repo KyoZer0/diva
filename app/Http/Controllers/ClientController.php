@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -12,7 +13,7 @@ class ClientController extends Controller
     
     use AuthorizesRequests;
     /**
-     * Display a listing of the clients.
+     * Display a listing of the user's own clients.
      */
     public function index(Request $request)
     {
@@ -105,6 +106,7 @@ class ClientController extends Controller
                 'Ville',
                 'Source',
                 'Produits',
+                'Style',
                 'Conseiller',
                 'Devis demandé',
                 'Statut',
@@ -117,17 +119,22 @@ class ClientController extends Controller
             foreach ($clients as $client) {
                 fputcsv($file, [
                     $client->full_name,
-                    $client->client_type,
-                    $client->company_name,
+                    $client->client_type === 'particulier' ? 'Particulier' : 'Professionnel',
+                    $client->company_name ?? '',
                     $client->phone,
-                    $client->email,
-                    $client->city,
-                    $client->source,
-                    is_array($client->products) ? implode(', ', $client->products) : '',
-                    $client->conseiller,
+                    $client->email ?? '',
+                    $client->city ?? '',
+                    $client->source ? ucfirst(str_replace('_', ' ', $client->source)) : '',
+                    is_array($client->products) ? implode(', ', array_map(function($p) {
+                        return ucfirst(str_replace(['_', 'Autres: '], [' ', ''], $p));
+                    }, $client->products)) : '',
+                    is_array($client->style) ? implode(', ', array_map(function($s) {
+                        return ucfirst(str_replace(['_', 'Autres: '], [' ', ''], $s));
+                    }, $client->style)) : '',
+                    $client->conseiller ?? '',
                     $client->devis_demande ? 'Oui' : 'Non',
-                    $client->status,
-                    $client->notes,
+                    $client->status === 'visited' ? 'A visité' : ($client->status === 'purchased' ? 'Client' : ($client->status === 'follow_up' ? 'À recontacter' : ucfirst($client->status))),
+                    $client->notes ?? '',
                     $client->created_at->format('Y-m-d H:i:s'),
                     $client->last_contact_date ? $client->last_contact_date->format('Y-m-d') : ''
                 ]);
@@ -144,7 +151,13 @@ class ClientController extends Controller
      */
     public function create()
     {
-        return view('clients.create');
+        $reps = collect();
+        if (Auth::user()->isAdmin()) {
+            $reps = User::whereHas('roles', function($query) {
+                $query->where('name', 'rep');
+            })->orderBy('name')->get();
+        }
+        return view('clients.create', compact('reps'));
     }
 
     /**
@@ -152,7 +165,9 @@ class ClientController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $user = Auth::user();
+        
+        $rules = [
             'full_name' => 'required|string|max:255',
             'client_type' => 'required|in:particulier,professionnel',
             'company_name' => 'nullable|string|max:255',
@@ -162,15 +177,41 @@ class ClientController extends Controller
             'source' => 'nullable|string|max:255',
             'products' => 'nullable|array',
             'products.*' => 'string|max:255',
+            'style' => 'nullable|array',
+            'style.*' => 'string|max:255',
             'conseiller' => 'nullable|string|max:255',
             'devis_demande' => 'nullable|boolean',
             'notes' => 'nullable|string',
             'status' => 'nullable|in:visited,purchased,follow_up',
             'last_contact_date' => 'nullable|date',
-        ]);
+        ];
+        
+        // Admin must assign to a rep
+        if ($user->isAdmin()) {
+            $rules['assigned_rep_id'] = 'required|exists:users,id';
+        } else {
+            $rules['assigned_rep_id'] = 'nullable|exists:users,id';
+        }
+        
+        $validated = $request->validate($rules);
+
+        // Determine user_id and conseiller
+        $userId = Auth::id();
+        $conseillerName = null;
+
+        if ($user->isAdmin()) {
+            // Admin must assign to a rep (validated above)
+            $assignedRep = User::findOrFail($validated['assigned_rep_id']);
+            $userId = $assignedRep->id;
+            $conseillerName = $assignedRep->name;
+        } else {
+            // Rep creating their own client
+            $userId = Auth::id();
+            $conseillerName = $user->name;
+        }
 
         Client::create([
-            'user_id' => Auth::id(),
+            'user_id' => $userId,
             'full_name' => $validated['full_name'],
             'client_type' => $validated['client_type'],
             'company_name' => $validated['company_name'] ?? null,
@@ -178,8 +219,9 @@ class ClientController extends Controller
             'email' => $validated['email'] ?? null,
             'city' => $validated['city'] ?? null,
             'source' => $validated['source'] ?? null,
-            'products' => isset($validated['products']) ? json_encode($validated['products']) : null,
-            'conseiller' => $validated['conseiller'] ?? null,
+            'products' => !empty($validated['products']) ? $validated['products'] : null,
+            'style' => !empty($validated['style']) ? $validated['style'] : null,
+            'conseiller' => $conseillerName,
             'devis_demande' => $validated['devis_demande'] ?? false,
             'notes' => $validated['notes'] ?? null,
             'status' => $validated['status'] ?? 'visited',
@@ -220,6 +262,8 @@ class ClientController extends Controller
             'source' => 'nullable|string|max:255',
             'products' => 'nullable|array',
             'products.*' => 'string|max:255',
+            'style' => 'nullable|array',
+            'style.*' => 'string|max:255',
             'conseiller' => 'nullable|string|max:255',
             'devis_demande' => 'nullable|boolean',
             'notes' => 'nullable|string',
@@ -235,7 +279,8 @@ class ClientController extends Controller
             'email' => $validated['email'] ?? null,
             'city' => $validated['city'] ?? null,
             'source' => $validated['source'] ?? null,
-            'products' => isset($validated['products']) ? json_encode($validated['products']) : null,
+            'products' => !empty($validated['products']) ? $validated['products'] : null,
+            'style' => !empty($validated['style']) ? $validated['style'] : null,
             'conseiller' => $validated['conseiller'] ?? null,
             'devis_demande' => $validated['devis_demande'] ?? false,
             'notes' => $validated['notes'] ?? null,

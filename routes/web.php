@@ -64,8 +64,11 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
         Route::get('/clients', [AdminController::class, 'allClients'])->name('clients');
+        Route::get('/clients/export', [AdminController::class, 'exportAllClients'])->name('clients.export');
+        Route::get('/reps', [AdminController::class, 'reps'])->name('reps');
         Route::get('/rep-performance', [AdminController::class, 'repPerformance'])->name('rep-performance');
         Route::get('/analytics', [AdminController::class, 'analytics'])->name('analytics');
         Route::get('/rep/{rep}/details', [AdminController::class, 'repDetails'])->name('rep-details');
+        Route::get('/rep/{rep}/export', [AdminController::class, 'exportRepClients'])->name('rep-export');
     });
 });
