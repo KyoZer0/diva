@@ -12,12 +12,21 @@ class ClientController extends Controller
 {
     
     use AuthorizesRequests;
+    
     /**
-     * Display a listing of the user's own clients.
+     * Display a listing of clients.
+     * Admin sees all clients, Reps see only their own.
      */
     public function index(Request $request)
     {
-        $query = Client::where('user_id', Auth::id());
+        $user = Auth::user();
+        
+        // Admin sees all clients, Rep sees only their own
+        if ($user->isAdmin()) {
+            $query = Client::query();
+        } else {
+            $query = Client::where('user_id', $user->id);
+        }
         
         // Search functionality
         if ($request->filled('search')) {
@@ -59,14 +68,16 @@ class ClientController extends Controller
         $clients = $query->get();
         
         // Get unique cities and sources for filters
-        $cities = Client::where('user_id', Auth::id())
+        $baseQuery = $user->isAdmin() ? Client::query() : Client::where('user_id', $user->id);
+        
+        $cities = (clone $baseQuery)
             ->whereNotNull('city')
             ->where('city', '!=', '')
             ->distinct()
             ->pluck('city')
             ->sort();
             
-        $sources = Client::where('user_id', Auth::id())
+        $sources = (clone $baseQuery)
             ->whereNotNull('source')
             ->where('source', '!=', '')
             ->distinct()
@@ -81,7 +92,14 @@ class ClientController extends Controller
      */
     public function export()
     {
-        $clients = Client::where('user_id', Auth::id())->get();
+        $user = Auth::user();
+        
+        // Admin exports all clients, Rep exports only their own
+        if ($user->isAdmin()) {
+            $clients = Client::all();
+        } else {
+            $clients = Client::where('user_id', $user->id)->get();
+        }
         
         $filename = 'clients_' . date('Y-m-d_H-i-s') . '.csv';
         
@@ -200,12 +218,10 @@ class ClientController extends Controller
         $conseillerName = null;
 
         if ($user->isAdmin()) {
-            // Admin must assign to a rep (validated above)
             $assignedRep = User::findOrFail($validated['assigned_rep_id']);
             $userId = $assignedRep->id;
             $conseillerName = $assignedRep->name;
         } else {
-            // Rep creating their own client
             $userId = Auth::id();
             $conseillerName = $user->name;
         }
@@ -236,6 +252,11 @@ class ClientController extends Controller
      */
     public function show(Client $client)
     {
+        // Admin can see all clients, Reps can only see their own
+        if (!Auth::user()->isAdmin() && $client->user_id !== Auth::id()) {
+            abort(403, 'Non autorisé');
+        }
+        
         return view('clients.show', compact('client'));
     }
 
@@ -244,7 +265,19 @@ class ClientController extends Controller
      */
     public function edit(Client $client)
     {
-        return view('clients.edit', compact('client'));
+        // Admin can edit all clients, Reps can only edit their own
+        if (!Auth::user()->isAdmin() && $client->user_id !== Auth::id()) {
+            abort(403, 'Non autorisé');
+        }
+        
+        $reps = collect();
+        if (Auth::user()->isAdmin()) {
+            $reps = User::whereHas('roles', function($query) {
+                $query->where('name', 'rep');
+            })->orderBy('name')->get();
+        }
+        
+        return view('clients.edit', compact('client', 'reps'));
     }
 
     /**
@@ -252,7 +285,14 @@ class ClientController extends Controller
      */
     public function update(Request $request, Client $client)
     {
-        $validated = $request->validate([
+        // Admin can update all clients, Reps can only update their own
+        if (!Auth::user()->isAdmin() && $client->user_id !== Auth::id()) {
+            abort(403, 'Non autorisé');
+        }
+        
+        $user = Auth::user();
+        
+        $rules = [
             'full_name' => 'required|string|max:255',
             'client_type' => 'required|in:particulier,professionnel',
             'company_name' => 'nullable|string|max:255',
@@ -269,9 +309,16 @@ class ClientController extends Controller
             'notes' => 'nullable|string',
             'status' => 'nullable|in:visited,purchased,follow_up',
             'last_contact_date' => 'nullable|date',
-        ]);
+        ];
+        
+        // Admin can reassign clients
+        if ($user->isAdmin()) {
+            $rules['assigned_rep_id'] = 'nullable|exists:users,id';
+        }
+        
+        $validated = $request->validate($rules);
 
-        $client->update([
+        $updateData = [
             'full_name' => $validated['full_name'],
             'client_type' => $validated['client_type'],
             'company_name' => $validated['company_name'] ?? null,
@@ -286,7 +333,16 @@ class ClientController extends Controller
             'notes' => $validated['notes'] ?? null,
             'status' => $validated['status'] ?? 'visited',
             'last_contact_date' => $validated['last_contact_date'] ?? null,
-        ]);
+        ];
+        
+        // If admin reassigns client
+        if ($user->isAdmin() && isset($validated['assigned_rep_id'])) {
+            $assignedRep = User::findOrFail($validated['assigned_rep_id']);
+            $updateData['user_id'] = $assignedRep->id;
+            $updateData['conseiller'] = $assignedRep->name;
+        }
+
+        $client->update($updateData);
 
         return redirect()->route('clients.index')->with('success', 'Client modifié avec succès!');
     }
@@ -296,6 +352,11 @@ class ClientController extends Controller
      */
     public function destroy(Client $client)
     {
+        // Only admin can delete clients
+        if (!Auth::user()->isAdmin()) {
+            abort(403, 'Non autorisé');
+        }
+        
         $client->delete();
 
         return redirect()->route('clients.index')->with('success', 'Client supprimé avec succès!');
@@ -305,110 +366,177 @@ class ClientController extends Controller
      * Display analytics dashboard.
      */
     public function analytics()
-    {
-        $user = Auth::user();
+{
+    $user = Auth::user();
+    
+    // 1. Base Query (Admin sees all, Rep sees their own)
+    $query = $user->isAdmin() ? Client::query() : Client::where('user_id', $user->id);
+    
+    // 2. Headline Stats
+    $totalClients = $query->count();
+    
+    // Growth (This Month vs Last Month)
+    $thisMonthCount = $query->clone()
+        ->where('created_at', '>=', now()->startOfMonth())
+        ->count();
         
-        // Get all clients for this user
-        $clients = Client::where('user_id', $user->id)->get();
+    $lastMonthCount = $query->clone()
+        ->whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()])
+        ->count();
+    
+    $growthPercentage = $lastMonthCount > 0 
+        ? (($thisMonthCount - $lastMonthCount) / $lastMonthCount) * 100 
+        : ($thisMonthCount > 0 ? 100 : 0);
+
+    // 3. The Funnel (Matches your migration structure)
+    // 'visited' here represents the Total Pool of leads
+    $funnel = [
+        'visited'   => $totalClients, 
+        'quotes'    => $query->clone()->where('devis_demande', true)->count(),
+        'purchased' => $query->clone()->where('status', 'purchased')->count(),
+    ];
+
+    // 4. Source Intelligence (With "Efficiency" rating)
+    // We group by your 'source' string column
+    $sourcesData = $query->clone()
+        ->select('source', 'devis_demande')
+        ->whereNotNull('source')
+        ->get()
+        ->groupBy('source');
         
-        // Total clients
-        $totalClients = $clients->count();
+    $sourceIntelligence = [];
+    foreach($sourcesData as $source => $rows) {
+        $count = $rows->count();
+        $quotes = $rows->where('devis_demande', true)->count();
         
-        // Clients by source with percentages
-        $sourcesData = $clients->groupBy('source')
-            ->map(function ($group) use ($totalClients) {
-                return [
-                    'count' => $group->count(),
-                    'percentage' => $totalClients > 0 ? round(($group->count() / $totalClients) * 100, 1) : 0
-                ];
-            })
-            ->sortByDesc('count')
-            ->toArray();
-        
-        // Translate source names
-        $sourceTranslations = [
-            'reseaux_sociaux' => 'Réseaux sociaux',
-            'publicite' => 'Publicité',
-            'recommandation' => 'Recommandation',
-            'passage_showroom' => 'Passage showroom',
-            'autre' => 'Autre',
+        $sourceIntelligence[ucfirst(str_replace('_', ' ', $source))] = [
+            'count' => $count,
+            'conversion_rate' => $count > 0 ? round(($quotes / $count) * 100) : 0,
+            'percentage' => $totalClients > 0 ? round(($count / $totalClients) * 100) : 0
         ];
+    }
+    // Sort by Volume (count)
+    uasort($sourceIntelligence, fn($a, $b) => $b['count'] <=> $a['count']);
+
+    // 5. Growth Chart (Last 6 Months)
+    // Uses 'created_at' timestamp
+    $growthChart = $query->clone()
+        ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, count(*) as count')
+        ->where('created_at', '>=', now()->subMonths(5)->startOfMonth())
+        ->groupBy('month')
+        ->pluck('count', 'month')
+        ->toArray();
+
+    $formattedGrowth = [];
+    for ($i = 5; $i >= 0; $i--) {
+        $key = now()->subMonths($i)->format('Y-m');
+        $label = now()->subMonths($i)->locale('fr')->format('M'); // Short month name in French
+        $formattedGrowth[$label] = $growthChart[$key] ?? 0;
+    }
+
+    // 6. Product Demand (Parsing the JSON column)
+    // Matches: $table->json('products')
+    $allClients = $query->clone()->select('products')->get();
+    $productStats = [];
+    
+    foreach ($allClients as $c) {
+        $prods = $c->products;
+        // Safety check: decode if it's a string, or use as array if cast in model
+        if (is_string($prods)) $prods = json_decode($prods, true);
         
-        $sources = [];
-        foreach ($sourcesData as $key => $data) {
-            $translatedKey = $sourceTranslations[$key] ?? ucfirst(str_replace('_', ' ', $key));
-            $sources[$translatedKey] = $data;
-        }
-        
-        // Top cities
-        $cities = $clients->whereNotNull('city')
-            ->where('city', '!=', '')
-            ->groupBy('city')
-            ->map->count()
-            ->sortDesc()
-            ->take(10);
-        
-        // Status distribution
-        $statusDistribution = $clients->groupBy('status')
-            ->map->count()
-            ->toArray();
-        
-        // Conversion rate (clients with devis_demande = true / total clients)
-        $devisRequested = $clients->where('devis_demande', true)->count();
-        $conversionRate = $totalClients > 0 ? round(($devisRequested / $totalClients) * 100, 1) : 0;
-        
-        // Products interest analysis
-        $productsInterest = [];
-        foreach ($clients as $client) {
-            if ($client->products && is_array($client->products)) {
-                foreach ($client->products as $product) {
-                    if (!isset($productsInterest[$product])) {
-                        $productsInterest[$product] = 0;
-                    }
-                    $productsInterest[$product]++;
-                }
+        if (is_array($prods)) {
+            foreach ($prods as $p) {
+                // Cleanup name: remove "Autres: " prefix and underscores
+                $cleanName = ucfirst(str_replace(['_', 'Autres: '], [' ', ''], $p));
+                if (!isset($productStats[$cleanName])) $productStats[$cleanName] = 0;
+                $productStats[$cleanName]++;
             }
         }
-        arsort($productsInterest);
-        
-        // Translate product names
-        $productTranslations = [
-            'carrelage' => 'Carrelage',
-            'meubles' => 'Meubles',
-            'sanitaires' => 'Sanitaires',
-            'autre' => 'Autre',
-        ];
-        
-        $translatedProducts = [];
-        foreach ($productsInterest as $key => $count) {
-            $translatedKey = $productTranslations[$key] ?? ucfirst($key);
-            $translatedProducts[$translatedKey] = [
-                'count' => $count,
-                'percentage' => $totalClients > 0 ? round(($count / $totalClients) * 100, 1) : 0
-            ];
-        }
-        
-        // Client type distribution
-        $clientTypes = $clients->groupBy('client_type')
-            ->map->count()
-            ->toArray();
-        
-        // Recent activity (last 30 days)
-        $recentClients = $clients->where('created_at', '>=', now()->subDays(30))->count();
-        
-        // Clients with quotes
-        $clientsWithQuotes = $clients->where('devis_demande', true)->count();
-        
-        return view('analytics.index', compact(
-            'totalClients',
-            'sources',
-            'cities',
-            'statusDistribution',
-            'conversionRate',
-            'translatedProducts',
-            'clientTypes',
-            'recentClients',
-            'clientsWithQuotes'
-        ));
+    }
+    arsort($productStats);
+    $topProducts = array_slice($productStats, 0, 5); // Keep top 5
+
+    // 7. "At Risk" Clients (Actionable Data)
+    // Clients not updated in 30 days and NOT purchased yet
+    $staleClients = $query->clone()
+        ->where('status', '!=', 'purchased')
+        ->where('updated_at', '<', now()->subDays(30))
+        ->orderBy('updated_at', 'asc') // Oldest interaction first
+        ->limit(5)
+        ->get();
+
+    // 8. Rep Performance (Admin Only)
+    // Requires User::clients() relationship
+    $repStats = [];
+    if ($user->isAdmin()) {
+        $repStats = \App\Models\User::whereHas('roles', fn($q) => $q->where('name', 'rep'))
+            ->withCount('clients') // Total clients
+            ->withCount(['clients as quotes_count' => function ($query) {
+                $query->where('devis_demande', true);
+            }])
+            ->withCount(['clients as recent_clients' => function ($query) {
+                $query->where('created_at', '>=', now()->subDays(30));
+            }])
+            ->get()
+            ->map(function ($rep) {
+                $rep->conversion_rate = $rep->clients_count > 0 
+                    ? round(($rep->quotes_count / $rep->clients_count) * 100) 
+                    : 0;
+                return $rep;
+            })
+            ->sortByDesc('conversion_rate'); // Sort by efficiency
+    }
+
+    return view('analytics.index', compact(
+        'totalClients', 
+        'thisMonthCount', // Renamed for clarity in view
+        'recentClients', // You can map thisMonthCount to this if view expects it
+        'growthPercentage', 
+        'funnel', 
+        'sourceIntelligence', 
+        'formattedGrowth', 
+        'topProducts', 
+        'staleClients', 
+        'repStats',
+        'clientsWithQuotes', // Calculate below if needed specifically
+        'conversionRate' // Calculate below
+    ))
+    ->with('clientsWithQuotes', $funnel['quotes'])
+    ->with('recentClients', $thisMonthCount)
+    ->with('conversionRate', $totalClients > 0 ? round(($funnel['quotes'] / $totalClients) * 100, 1) : 0);
+}
+
+/**
+     * Agenda / Calendar Page
+     */
+    public function calendar()
+    {
+        $user = Auth::user();
+
+        // 1. Upcoming Tasks: Clients marked as 'follow_up' or 'visited' ordered by last update
+        // We assume clients not updated recently are the priority
+        $upcoming = Client::where('user_id', $user->id)
+            ->whereIn('status', ['follow_up', 'visited'])
+            ->orderBy('updated_at', 'asc') // Oldest update = highest priority to reconnect
+            ->limit(20)
+            ->get();
+
+        // 2. Real Stats for the Side Widget
+        // Quotes generated this week
+        $quotesThisWeek = Client::where('user_id', $user->id)
+            ->where('devis_demande', true)
+            ->where('updated_at', '>=', now()->startOfWeek())
+            ->count();
+
+        // Total clients waiting for follow-up
+        $pendingFollowUps = Client::where('user_id', $user->id)
+            ->where('status', 'follow_up')
+            ->count();
+
+        // Calculate a dynamic progress (Assuming a target of 5 quotes/week for gamification)
+        $weeklyGoal = 5; 
+        $quoteProgress = min(100, round(($quotesThisWeek / $weeklyGoal) * 100));
+
+        return view('calendar', compact('upcoming', 'quotesThisWeek', 'pendingFollowUps', 'quoteProgress'));
     }
 }
