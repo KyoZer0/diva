@@ -1,241 +1,175 @@
 @extends('layouts.app')
 
-@section('title', 'Mes clients')
-@section('page-title', 'Mes clients')
-@section('page-description', 'Liste des clients que vous avez ajoutés')
-
-@section('header-actions')
-    <div class="flex items-center gap-3">
-        <a href="{{ route('clients.export') }}" class="inline-flex items-center px-4 py-2 bg-white border-2 border-black text-black rounded-lg text-sm font-medium hover:bg-black hover:text-white transition-colors shadow-sm">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            Exporter CSV
-        </a>
-        <a href="{{ route('clients.create') }}" class="inline-flex items-center px-4 py-2 bg-amber-500 text-black rounded-lg text-sm font-medium hover:bg-amber-600 transition-all shadow-sm">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            Ajouter un client
-        </a>
-    </div>
-@endsection
+@section('title', 'Base Clients')
 
 @section('content')
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white border-2 border-black p-4 rounded-xl shadow-sm">
-            <div class="text-sm text-gray-600 mb-1">Total Clients</div>
-            <div class="text-2xl font-bold text-black">{{ $clients->count() }}</div>
+<div class="max-w-7xl mx-auto space-y-8">
+    
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-end gap-6 bg-white rounded-[2rem] p-8 border border-neutral-100 shadow-sm relative overflow-hidden">
+        <div class="absolute inset-0 bg-[#E6AF5D]/5 opacity-30"></div>
+        
+        <div class="relative z-10">
+            <h1 class="text-4xl font-serif font-bold text-neutral-900 mb-2">Base Clients</h1>
+            <p class="text-neutral-500 max-w-lg">
+                Gérez l'intégralité de votre portefeuille client.
+            </p>
         </div>
-        <div class="bg-amber-50 border-2 border-amber-300 p-4 rounded-xl shadow-sm">
-            <div class="text-sm text-amber-700 mb-1">Ont acheté</div>
-            <div class="text-2xl font-bold text-amber-900">{{ $clients->where('status', 'purchased')->count() }}</div>
-        </div>
-        <div class="bg-white border-2 border-gray-300 p-4 rounded-xl shadow-sm">
-            <div class="text-sm text-gray-600 mb-1">À recontacter</div>
-            <div class="text-2xl font-bold text-gray-900">{{ $clients->where('status', 'follow_up')->count() }}</div>
-        </div>
-        <div class="bg-white border-2 border-gray-300 p-4 rounded-xl shadow-sm">
-            <div class="text-sm text-gray-600 mb-1">Visités</div>
-            <div class="text-2xl font-bold text-gray-900">{{ $clients->where('status', 'visited')->count() }}</div>
+
+        <div class="relative z-10 flex gap-3">
+            <a href="{{ route('clients.export') }}" class="px-5 py-3 bg-white border border-neutral-200 text-neutral-600 rounded-xl text-sm font-bold hover:bg-neutral-50 transition-colors shadow-sm">
+                Exporter CSV
+            </a>
+            <a href="{{ route('clients.create') }}" class="px-5 py-3 bg-neutral-900 text-white rounded-xl text-sm font-bold hover:bg-black transition-colors shadow-lg shadow-neutral-200">
+                + Nouveau Client
+            </a>
         </div>
     </div>
 
-    <!-- Search and Filters -->
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
-        <form method="GET" action="{{ route('clients.index') }}" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <!-- Search -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Rechercher</label>
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Nom, email, téléphone..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all text-sm">
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white p-6 rounded-2xl border border-neutral-100 shadow-sm">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-2">Total</div>
+            <div class="text-3xl font-serif font-bold text-neutral-900">{{ $stats->total }}</div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl border border-neutral-100 shadow-sm">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-2">Clients (Acheté)</div>
+            <div class="text-3xl font-serif font-bold text-neutral-900">{{ $stats->purchased }}</div>
+            <div class="text-xs text-emerald-600 mt-1 font-bold">+ Lead converti</div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl border border-neutral-100 shadow-sm">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-[#E6AF5D] mb-2">En Cours</div>
+            <div class="text-3xl font-serif font-bold text-neutral-900">{{ $stats->follow_up }}</div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl border border-neutral-100 shadow-sm">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-blue-500 mb-2">Visites</div>
+            <div class="text-3xl font-serif font-bold text-neutral-900">{{ $stats->visited }}</div>
+        </div>
+    </div>
+
+    <!-- Filters & List -->
+    <div class="bg-white rounded-[2rem] border border-neutral-100 shadow-sm overflow-hidden">
+        
+        <!-- Filter Bar -->
+        <div class="p-6 border-b border-neutral-100 bg-neutral-50/50">
+            <form method="GET" action="{{ route('clients.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="col-span-2">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Rechercher un client, téléphone..." 
+                           class="w-full bg-white border-neutral-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#E6AF5D] focus:border-transparent">
                 </div>
-                
-                <!-- Status Filter -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Statut</label>
-                    <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all text-sm">
+                     <select name="status" class="w-full bg-white border-neutral-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#E6AF5D] focus:border-transparent text-neutral-600">
                         <option value="">Tous les statuts</option>
-                        <option value="visited" {{ request('status') === 'visited' ? 'selected' : '' }}>A visité</option>
-                        <option value="follow_up" {{ request('status') === 'follow_up' ? 'selected' : '' }}>À recontacter</option>
-                        <option value="purchased" {{ request('status') === 'purchased' ? 'selected' : '' }}>Ont acheté</option>
-                        <option value="prospect" {{ request('status') === 'prospect' ? 'selected' : '' }}>Prospect</option>
-                        <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactif</option>
+                        <option value="visited" {{ request('status') === 'visited' ? 'selected' : '' }}>Visite</option>
+                        <option value="follow_up" {{ request('status') === 'follow_up' ? 'selected' : '' }}>En cours</option>
+                        <option value="purchased" {{ request('status') === 'purchased' ? 'selected' : '' }}>Client (Acheté)</option>
                     </select>
                 </div>
-                
-                <!-- Client Type Filter -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Type de client</label>
-                    <select name="client_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all text-sm">
-                        <option value="">Tous les types</option>
-                        <option value="particulier" {{ request('client_type') === 'particulier' ? 'selected' : '' }}>Particulier</option>
-                        <option value="professionnel" {{ request('client_type') === 'professionnel' ? 'selected' : '' }}>Professionnel</option>
-                    </select>
+                    <button type="submit" class="w-full bg-neutral-900 text-white font-bold py-2.5 rounded-xl hover:bg-black transition-colors">
+                        Filtrer
+                    </button>
                 </div>
-                
-                <!-- City Filter -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Ville</label>
-                    <select name="city" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all text-sm">
-                        <option value="">Toutes les villes</option>
-                        @foreach($cities as $city)
-                            <option value="{{ $city }}" {{ request('city') === $city ? 'selected' : '' }}>{{ $city }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-3">
-                <button type="submit" class="inline-flex items-center px-6 py-2.5 bg-amber-500 text-black rounded-lg font-medium hover:bg-amber-600 transition-all shadow-sm">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                    Filtrer
-                </button>
-                @if(request()->hasAny(['search', 'status', 'client_type', 'city', 'source']))
-                    <a href="{{ route('clients.index') }}" class="inline-flex items-center px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                        Réinitialiser
-                    </a>
-                @endif
-            </div>
-        </form>
-    </div>
+            </form>
+        </div>
 
-    <!-- Clients Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <!-- Table -->
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="w-full">
+                <thead class="bg-neutral-50 border-b border-neutral-100">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ville</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date ajout</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Client</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Type</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Contact</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-500">Statut</th>
+                        <th class="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-widest text-neutral-500">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="divide-y divide-neutral-100">
                     @forelse($clients as $client)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10 bg-black rounded-full flex items-center justify-center text-white font-semibold">
-                                        {{ strtoupper(substr($client->full_name, 0, 2)) }}
-                                    </div>
-                                    <div class="ml-4">
-                                        <a href="{{ route('clients.show', $client) }}" class="text-sm font-medium text-gray-900 hover:text-amber-600 transition-colors">
-                                            {{ $client->full_name }}
-                                        </a>
-                                        @if($client->company_name)
-                                            <div class="text-xs text-gray-500">{{ $client->company_name }}</div>
-                                        @endif
-                                    </div>
+                    <tr class="hover:bg-neutral-50/50 transition-colors group">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-neutral-900 text-[#E6AF5D] flex items-center justify-center font-serif font-bold text-sm">
+                                    {{ substr($client->full_name, 0, 1) }}
                                 </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $client->client_type === 'particulier' ? 'bg-gray-100 text-gray-800' : 'bg-amber-100 text-amber-800' }}">
-                                    {{ $client->client_type === 'particulier' ? 'Particulier' : 'Professionnel' }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900">{{ $client->phone }}</div>
-                                @if($client->email)
-                                    <div class="text-xs text-gray-500">{{ $client->email }}</div>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ $client->city ?? '-' }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    {{ $client->status === 'purchased' ? 'bg-green-100 text-green-800' : 
-                                       ($client->status === 'follow_up' ? 'bg-orange-100 text-orange-800' : 
-                                       ($client->status === 'visited' ? 'bg-blue-100 text-blue-800' : 
-                                       ($client->status === 'prospect' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'))) }}">
-                                    @if($client->status === 'visited')
-                                        A visité
-                                    @elseif($client->status === 'purchased')
-                                        Client
-                                    @elseif($client->status === 'follow_up')
-                                        À recontacter
-                                    @elseif($client->status === 'prospect')
-                                        Prospect
-                                    @else
-                                        {{ ucfirst($client->status) }}
+                                <div>
+                                    <a href="{{ route('clients.show', $client) }}" class="block font-bold text-neutral-900 hover:text-[#E6AF5D] transition-colors">
+                                        {{ $client->full_name }}
+                                    </a>
+                                    @if($client->professional_category)
+                                        <span class="text-[10px] text-neutral-400 font-bold uppercase tracking-wide">{{ $client->professional_category }}</span>
+                                    @elseif($client->company_name)
+                                        <span class="text-[10px] text-neutral-400 font-bold uppercase tracking-wide">{{ $client->company_name }}</span>
                                     @endif
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $client->created_at->format('d/m/Y') }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div class="flex items-center justify-end gap-2">
-                                    <a href="{{ route('clients.show', $client) }}" class="inline-flex items-center px-3 py-1.5 bg-amber-50 text-amber-900 rounded-lg hover:bg-amber-100 transition-colors">
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                        </svg>
-                                    </a>
-                                    
-                                    @auth
-                                        @if(Auth::user()->isAdmin())
-                                            <!-- Admin: Edit and Delete buttons -->
-                                            <a href="{{ route('clients.edit', $client) }}" class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-900 rounded-lg hover:bg-blue-100 transition-colors">
-                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                                </svg>
-                                            </a>
-                                            
-                                            <form action="{{ route('clients.destroy', $client) }}" method="POST" class="inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce client ?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-900 rounded-lg hover:bg-red-100 transition-colors">
-                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                    </svg>
-                                                </button>
-                                            </form>
-                                        @else
-                                            <!-- Rep: Only Edit button for their own clients -->
-                                            <a href="{{ route('clients.edit', $client) }}" class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-900 rounded-lg hover:bg-blue-100 transition-colors">
-                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                                </svg>
-                                                Modifier
-                                            </a>
-                                        @endif
-                                    @endauth
                                 </div>
-                            </td>
-                        </tr>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            @if($client->client_type === 'professionnel')
+                                <div class="flex flex-col items-start gap-1">
+                                    <span class="px-2 py-0.5 bg-black text-[#E6AF5D] text-[10px] font-bold uppercase tracking-wide rounded border border-[#E6AF5D]">PRO</span>
+                                    @if($client->professional_category)
+                                        <span class="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">{{ $client->professional_category }}</span>
+                                    @endif
+                                </div>
+                            @else
+                                <span class="px-2 py-1 bg-neutral-100 text-neutral-500 text-[10px] font-bold uppercase tracking-wide rounded">PARTICULIER</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-bold text-neutral-700">{{ $client->phone }}</div>
+                            <div class="text-xs text-neutral-400">{{ $client->email }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            @php
+                                $statusClasses = [
+                                    'visited' => 'bg-blue-50 text-blue-600',
+                                    'follow_up' => 'bg-orange-50 text-orange-600',
+                                    'purchased' => 'bg-emerald-50 text-emerald-600',
+                                    'prospect' => 'bg-neutral-100 text-neutral-500',
+                                ];
+                                $statusLabels = [
+                                    'visited' => 'Visite',
+                                    'follow_up' => 'À Suivre',
+                                    'purchased' => 'Client',
+                                    'prospect' => 'Prospect',
+                                ];
+                            @endphp
+                            <span class="px-3 py-1 rounded-full text-xs font-bold {{ $statusClasses[$client->status] ?? 'bg-gray-100 text-gray-500' }}">
+                                {{ $statusLabels[$client->status] ?? ucfirst($client->status) }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                             <a href="{{ route('clients.show', $client) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-neutral-100 text-neutral-400 hover:bg-neutral-900 hover:text-white transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </a>
+                        </td>
+                    </tr>
                     @empty
-                        <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
-                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                </svg>
-                                <h3 class="mt-2 text-sm font-medium text-gray-900">Aucun client trouvé</h3>
-                                <p class="mt-1 text-sm text-gray-500">Commencez par ajouter votre premier client.</p>
-                                <div class="mt-6">
-                                    <a href="{{ route('clients.create') }}" class="inline-flex items-center px-4 py-2 bg-amber-500 text-black rounded-lg font-medium hover:bg-amber-600 transition-all shadow-sm">
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                        </svg>
-                                        Ajouter un client
-                                    </a>
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center justify-center">
+                                <div class="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center mb-4">
+                                    <svg class="w-6 h-6 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                                 </div>
-                            </td>
-                        </tr>
+                                <h3 class="text-neutral-900 font-bold text-lg mb-1">Aucun client trouvé</h3>
+                                <p class="text-neutral-400 text-sm mb-4">Commencez par ajouter votre premier client.</p>
+                                <a href="{{ route('clients.create') }}" class="px-4 py-2 bg-neutral-900 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors">
+                                    Ajouter un client
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+        
+        <!-- Pagination -->
+        <div class="p-6 border-t border-neutral-100">
+            {{ $clients->withQueryString()->links() }} 
+        </div>
     </div>
+</div>
 @endsection

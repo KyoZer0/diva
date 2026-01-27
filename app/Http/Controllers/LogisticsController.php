@@ -460,4 +460,23 @@ class LogisticsController extends Controller
         
         return back()->with('success', 'Fiche produit mise à jour.');
     }
+
+    public function createNews()
+    {
+        return view('tools.news.create');
+    }
+
+    public function storeNews(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'image_url' => 'nullable|url',
+            'stock_quantity' => 'nullable|integer',
+            'unit' => 'nullable|string'
+        ]);
+
+        News::create($validated);
+        return redirect()->route('admin.news.create')->with('success', 'Annonce publiée !'); 
+    }
 }

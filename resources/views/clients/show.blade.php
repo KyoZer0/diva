@@ -14,18 +14,13 @@
         $styles = is_string($client->style) ? json_decode($client->style, true) : $client->style;
         if (!is_array($styles)) $styles = [];
         
-        // Status Logic
-        $isSold = $client->status === 'purchased';
-        $statusLabel = match($client->status) {
-            'purchased' => 'Client Actif',
-            'follow_up' => 'À Relancer',
-            default => 'Prospect / Visite'
-        };
+        // Status Logic Map
+        // Visite -> visited
+        // Relance -> follow_up
+        // Vente -> purchased
+        // Note: The progression visualizer uses these to determine active step
         
-        // Visual Progress Logic (0 = Visited, 1 = Quote, 2 = Sold)
-        $progressStep = 0;
-        if($client->devis_demande) $progressStep = 1;
-        if($isSold) $progressStep = 2;
+        $currentStatus = $client->status;
     @endphp
 
     <div class="max-w-7xl mx-auto mb-12">
@@ -64,7 +59,7 @@
                 <!-- 1. IDENTITY CARD -->
                 <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden relative">
                     <!-- Status Banner -->
-                    <div class="h-2 w-full {{ $isSold ? 'bg-emerald-500' : ($client->status == 'follow_up' ? 'bg-[#E6AF5D]' : 'bg-neutral-900') }}"></div>
+                    <div class="h-2 w-full {{ $client->status == 'purchased' ? 'bg-emerald-500' : ($client->status == 'follow_up' ? 'bg-[#E6AF5D]' : 'bg-neutral-900') }}"></div>
                     
                     <div class="p-6 text-center">
                         <div class="w-24 h-24 mx-auto rounded-full bg-neutral-900 text-[#E6AF5D] flex items-center justify-center text-3xl font-bold border-4 border-white shadow-lg mb-4">
@@ -78,13 +73,33 @@
                                 {{ $client->company_name }}
                             </p>
                         @endif
-
-                        <div class="mt-4 flex justify-center">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
-                                {{ $isSold ? 'bg-emerald-100 text-emerald-700' : ($client->status == 'follow_up' ? 'bg-[#FFFBEB] text-amber-700' : 'bg-neutral-100 text-neutral-600') }}">
-                                {{ $statusLabel }}
-                            </span>
+                        
+                        <!-- Client Type & Subcategory Display -->
+                        <div class="mt-4 flex flex-col items-center gap-2">
+                             @if($client->client_type === 'professionnel')
+                                <div class="flex items-center gap-2">
+                                    <span class="px-3 py-1 bg-black text-[#E6AF5D] text-[10px] font-bold uppercase tracking-wide rounded border border-[#E6AF5D]">PRO</span>
+                                    @if($client->professional_category)
+                                        <span class="px-2 py-1 bg-neutral-100 text-neutral-600 text-[10px] font-bold uppercase tracking-wide rounded border border-neutral-200">
+                                            {{ $client->professional_category }}
+                                        </span>
+                                    @else
+                                        <span class="text-[10px] text-neutral-400 italic">Catégorie non spécifiée</span>
+                                    @endif
+                                </div>
+                            @else
+                                <span class="px-3 py-1 bg-neutral-100 text-neutral-500 text-[10px] font-bold uppercase tracking-wide rounded">PARTICULIER</span>
+                            @endif
                         </div>
+                        
+                        @if($client->potential_score)
+                        <div class="mt-6 px-4">
+                             <span class="block text-[10px] text-neutral-400 uppercase tracking-wider mb-1">Score Potentiel ({{ $client->potential_score }}%)</span>
+                             <div class="w-full bg-neutral-100 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-[#E6AF5D] h-1.5 rounded-full transition-all duration-1000" style="width: {{ $client->potential_score }}%"></div>
+                             </div>
+                        </div>
+                        @endif
                     </div>
 
                     <!-- Communication Grid -->
@@ -104,43 +119,7 @@
                     </div>
                 </div>
 
-                <!-- 2. QUICK CLOSE ACTION (Featured) -->
-                @if(!$isSold)
-                <div class="bg-gradient-to-br from-white to-neutral-50 p-6 rounded-2xl border border-neutral-200 shadow-sm relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-3 opacity-5">
-                        <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                    </div>
-                    
-                    <h3 class="text-sm font-bold text-neutral-900 uppercase tracking-wider mb-1">Action Rapide</h3>
-                    <p class="text-xs text-neutral-500 mb-4">Conclure ce dossier maintenant ?</p>
-                    
-                    <form action="{{ route('clients.update', $client->id) }}" method="POST">
-                        @csrf @method('PUT')
-                        <input type="hidden" name="full_name" value="{{ $client->full_name }}">
-                        <input type="hidden" name="client_type" value="{{ $client->client_type }}">
-                        <input type="hidden" name="phone" value="{{ $client->phone }}">
-                        <input type="hidden" name="status" value="purchased">
-                        <input type="hidden" name="last_contact_date" value="{{ now()->format('Y-m-d') }}">
-                        
-                        <button type="submit" class="w-full py-3 bg-neutral-900 hover:bg-black text-white text-sm font-bold rounded-xl shadow-lg shadow-neutral-200 transition-all flex items-center justify-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            Marquer comme Vendu
-                        </button>
-                    </form>
-                </div>
-                @else
-                <div class="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-full bg-white text-emerald-500 flex items-center justify-center shadow-sm">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    </div>
-                    <div>
-                        <h3 class="text-emerald-900 font-bold">Dossier Clos</h3>
-                        <p class="text-emerald-700 text-xs mt-0.5">Vente enregistrée avec succès.</p>
-                    </div>
-                </div>
-                @endif
-
-                <!-- 3. CONTACT DETAILS -->
+                <!-- 2. CONTACT DETAILS -->
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
                     <h3 class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4">Coordonnées</h3>
                     <div class="space-y-4">
@@ -174,38 +153,54 @@
             <!-- RIGHT COLUMN: CONTEXT & DETAILS -->
             <div class="lg:col-span-2 space-y-6">
                 
-                <!-- 1. PIPELINE VISUALIZER (New Feature) -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
+                <!-- 1. INTERACTIVE PIPELINE VISUALIZER -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200" x-data="{ currentStatus: '{{ $client->status }}' }">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-xs font-bold text-neutral-400 uppercase tracking-widest">Progression du dossier</h3>
-                        <span class="text-xs font-bold text-neutral-900 bg-neutral-100 px-2 py-1 rounded">Étape {{ $progressStep + 1 }}/3</span>
+                        <div class="text-xs font-bold text-neutral-900 bg-neutral-100 px-3 py-1 rounded-full uppercase" x-text="currentStatus === 'purchased' ? 'Client Actif' : (currentStatus === 'follow_up' ? 'À Relancer' : 'Visite / Prospect')"></div>
                     </div>
                     
-                    <div class="relative flex items-center justify-between">
+                    <div class="relative flex items-center justify-between px-4">
                         <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-neutral-100 -z-0"></div>
                         
-                        <!-- Step 1 -->
-                        <div class="relative z-10 flex flex-col items-center gap-2">
-                            <div class="w-8 h-8 rounded-full {{ $progressStep >= 0 ? 'bg-neutral-900 text-white' : 'bg-neutral-200 text-neutral-400' }} flex items-center justify-center font-bold text-xs shadow-sm ring-4 ring-white">
+                        <!-- Hidden Form for Status Updates -->
+                        <form id="statusForm" action="{{ route('clients.update', $client->id) }}" method="POST" class="hidden">
+                             @csrf @method('PUT')
+                             <input type="hidden" name="full_name" value="{{ $client->full_name }}">
+                             <input type="hidden" name="client_type" value="{{ $client->client_type }}">
+                             <input type="hidden" name="phone" value="{{ $client->phone }}">
+                             <input type="hidden" name="status" id="statusInput">
+                        </form>
+
+                        <!-- Step 1: Visited -->
+                        <div class="relative z-10 flex flex-col items-center gap-2 cursor-pointer group" @click="if(currentStatus !== 'visited') { document.getElementById('statusInput').value = 'visited'; document.getElementById('statusForm').submit(); }">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ring-4 ring-white transition-all duration-300"
+                                :class="currentStatus == 'visited' || currentStatus == 'follow_up' || currentStatus == 'purchased' ? 'bg-neutral-900 text-white' : 'bg-neutral-200 text-neutral-400'">
                                 1
                             </div>
-                            <span class="text-xs font-bold {{ $progressStep >= 0 ? 'text-neutral-900' : 'text-neutral-400' }}">Contact</span>
+                            <span class="text-xs font-bold uppercase transition-colors" :class="currentStatus == 'visited' ? 'text-black' : 'text-neutral-400'">1er Contact</span>
+                            <!-- Hover Tooltip -->
+                            <span class="absolute -bottom-8 opacity-0 group-hover:opacity-100 bg-neutral-800 text-white text-[9px] px-2 py-1 rounded transition-opacity whitespace-nowrap">Marquer comme Visite</span>
                         </div>
 
-                        <!-- Step 2 -->
-                        <div class="relative z-10 flex flex-col items-center gap-2">
-                            <div class="w-8 h-8 rounded-full {{ $progressStep >= 1 ? 'bg-[#E6AF5D] text-white' : 'bg-neutral-200 text-neutral-400' }} flex items-center justify-center font-bold text-xs shadow-sm ring-4 ring-white transition-colors duration-500">
+                        <!-- Step 2: Follow Up -->
+                        <div class="relative z-10 flex flex-col items-center gap-2 cursor-pointer group" @click="if(currentStatus !== 'follow_up') { document.getElementById('statusInput').value = 'follow_up'; document.getElementById('statusForm').submit(); }">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ring-4 ring-white transition-all duration-300"
+                                :class="currentStatus == 'follow_up' || currentStatus == 'purchased' ? 'bg-[#E6AF5D] text-white' : (currentStatus == 'visited' ? 'bg-neutral-200 text-neutral-400' : 'bg-neutral-200 text-neutral-400')">
                                 2
                             </div>
-                            <span class="text-xs font-bold {{ $progressStep >= 1 ? 'text-neutral-900' : 'text-neutral-400' }}">Devis</span>
+                            <span class="text-xs font-bold uppercase transition-colors" :class="currentStatus == 'follow_up' ? 'text-[#E6AF5D]' : 'text-neutral-400'">À Relancer</span>
+                             <span class="absolute -bottom-8 opacity-0 group-hover:opacity-100 bg-neutral-800 text-white text-[9px] px-2 py-1 rounded transition-opacity whitespace-nowrap">Marquer à Relancer</span>
                         </div>
 
-                        <!-- Step 3 -->
-                        <div class="relative z-10 flex flex-col items-center gap-2">
-                            <div class="w-8 h-8 rounded-full {{ $progressStep >= 2 ? 'bg-emerald-500 text-white' : 'bg-neutral-200 text-neutral-400' }} flex items-center justify-center font-bold text-xs shadow-sm ring-4 ring-white transition-colors duration-500">
+                        <!-- Step 3: Purchased -->
+                        <div class="relative z-10 flex flex-col items-center gap-2 cursor-pointer group" @click="if(currentStatus !== 'purchased') { document.getElementById('statusInput').value = 'purchased'; document.getElementById('statusForm').submit(); }">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ring-4 ring-white transition-all duration-300"
+                                :class="currentStatus == 'purchased' ? 'bg-emerald-500 text-white' : 'bg-neutral-200 text-neutral-400'">
                                 3
                             </div>
-                            <span class="text-xs font-bold {{ $progressStep >= 2 ? 'text-neutral-900' : 'text-neutral-400' }}">Vente</span>
+                            <span class="text-xs font-bold uppercase transition-colors" :class="currentStatus == 'purchased' ? 'text-emerald-600' : 'text-neutral-400'">Vente Actée</span>
+                             <span class="absolute -bottom-8 opacity-0 group-hover:opacity-100 bg-neutral-800 text-white text-[9px] px-2 py-1 rounded transition-opacity whitespace-nowrap">Marquer comme Vendu</span>
                         </div>
                     </div>
                 </div>
@@ -257,6 +252,10 @@
                                 <span class="text-neutral-500">Conseiller</span>
                                 <span class="font-bold text-neutral-900">{{ $client->conseiller ?? '—' }}</span>
                             </li>
+                             <li class="flex justify-between">
+                                <span class="text-neutral-500">Status Intelligent</span>
+                                <span class="font-bold text-neutral-900 uppercase text-xs">{{ $client->smart_status ?? '—' }}</span>
+                            </li>
                             <li class="flex justify-between">
                                 <span class="text-neutral-500">Création</span>
                                 <span class="font-medium text-neutral-700">{{ $client->created_at->format('d/m/Y') }}</span>
@@ -269,20 +268,51 @@
                     </div>
                 </div>
 
-                <!-- 3. NOTES -->
-                <div class="bg-[#FFFCF5] p-6 rounded-2xl border border-[#E6AF5D]/30 relative">
-                    <div class="flex items-center gap-2 mb-4">
-                        <svg class="w-4 h-4 text-[#E6AF5D]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                        <h3 class="text-xs font-bold text-amber-900 uppercase tracking-widest">Remarques & Observations</h3>
-                    </div>
-                    
-                    @if($client->notes)
-                        <div class="text-sm text-neutral-700 leading-relaxed whitespace-pre-line font-medium">
-                            {{ $client->notes }}
+                <!-- 3. NOTES & REMARKS (Rich Editor Simulated) -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200" x-data="{ editing: false }">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-[#E6AF5D]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            <h3 class="text-xs font-bold text-neutral-900 uppercase tracking-widest">Remarques & Observations</h3>
                         </div>
-                    @else
-                        <p class="text-sm text-neutral-400 italic">Aucune note spécifique pour ce client.</p>
-                    @endif
+                        <button @click="editing = !editing" x-show="!editing" class="text-xs font-bold text-neutral-500 hover:text-black">Modifier</button>
+                         <button @click="editing = !editing" x-show="editing" class="text-xs font-bold text-red-500 hover:text-red-700">Annuler</button>
+                    </div>
+                
+                    <div x-show="!editing">
+                        @if($client->notes)
+                            <div class="p-4 bg-[#FFFCF5] rounded-xl border border-[#E6AF5D]/20 text-sm text-neutral-800 leading-relaxed whitespace-pre-line font-medium min-h-[100px]">
+                                {{ $client->notes }}
+                            </div>
+                        @else
+                            <div class="p-4 bg-neutral-50 rounded-xl border border-neutral-100 text-sm text-neutral-400 italic min-h-[100px] flex items-center justify-center">
+                                Aucune note enregistrée. Cliquez sur modifier.
+                            </div>
+                        @endif
+                    </div>
+
+                    <div x-show="editing" style="display: none;">
+                        <form action="{{ route('clients.update', $client->id) }}" method="POST">
+                            @csrf @method('PUT')
+                             <input type="hidden" name="full_name" value="{{ $client->full_name }}">
+                             <input type="hidden" name="client_type" value="{{ $client->client_type }}">
+                             <input type="hidden" name="phone" value="{{ $client->phone }}">
+                            
+                            <!-- Simple Rich-Like Textarea -->
+                            <div class="relative">
+                                <textarea name="notes" rows="6" 
+                                    class="w-full p-4 bg-white border border-neutral-300 rounded-xl focus:ring-2 focus:ring-[#E6AF5D] focus:border-[#E6AF5D] focus:outline-none transition-all text-sm leading-relaxed"
+                                    placeholder="Saisissez vos remarques ici...">{{ $client->notes }}</textarea>
+                                <div class="absolute bottom-3 right-3 text-[10px] text-neutral-400">Markdown supporté (bientôt)</div>
+                            </div>
+                            
+                            <div class="mt-3 flex justify-end">
+                                <button type="submit" class="px-4 py-2 bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-black transition-colors">
+                                    Enregistrer
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
             </div>

@@ -21,12 +21,19 @@ class ClientController extends Controller
     {
         $user = Auth::user();
         
-        // Admin sees all clients, Rep sees only their own
-        if ($user->isAdmin()) {
-            $query = Client::query();
-        } else {
-            $query = Client::where('user_id', $user->id);
-        }
+        // Base Query (Admin sees all, Rep sees only their own)
+        $baseQuery = $user->isAdmin() ? Client::query() : Client::where('user_id', $user->id);
+
+        // Calculate Portfolio Stats (Global)
+        $stats = (clone $baseQuery)->selectRaw("
+            count(*) as total,
+            count(case when status = 'purchased' then 1 end) as purchased,
+            count(case when status = 'follow_up' then 1 end) as follow_up,
+            count(case when status = 'visited' then 1 end) as visited
+        ")->first();
+
+        // Prepare Search/Filter Query
+        $query = clone $baseQuery;
         
         // Search functionality
         if ($request->filled('search')) {
@@ -65,11 +72,10 @@ class ClientController extends Controller
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
         
-        $clients = $query->get();
+        // Paginate results instead of getting all
+        $clients = $query->paginate(15);
         
-        // Get unique cities and sources for filters
-        $baseQuery = $user->isAdmin() ? Client::query() : Client::where('user_id', $user->id);
-        
+        // Get unique cities and sources for filters (from base query to show all options)
         $cities = (clone $baseQuery)
             ->whereNotNull('city')
             ->where('city', '!=', '')
@@ -84,7 +90,7 @@ class ClientController extends Controller
             ->pluck('source')
             ->sort();
         
-        return view('clients.index', compact('clients', 'cities', 'sources'));
+        return view('clients.index', compact('clients', 'cities', 'sources', 'stats'));
     }
     
     /**

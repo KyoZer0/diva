@@ -11,7 +11,7 @@
         </div>
         
         @if(auth()->user()->isAdmin())
-            <a href="{{ route('tools.news.create') }}" class="px-4 py-2 bg-black text-white rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-[#E6AF5D] hover:text-black transition-all">
+            <a href="{{ route('admin.news.create') }}" class="px-4 py-2 bg-black text-white rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-[#E6AF5D] hover:text-black transition-all">
                 + Ajouter
             </a>
         @endif

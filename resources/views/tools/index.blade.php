@@ -174,34 +174,31 @@
 
     </div>
 
-    <!-- 3. COMING NEXT (Visualizer Only) -->
-    <div class="relative text-center mt-32">
-        <div class="roadmap-line"></div>
-        <div class="relative z-10 inline-block bg-[#F9FAFB] px-4 py-2">
-            <span class="text-[#E6AF5D] font-mono text-xs tracking-[0.3em] uppercase">Horizon 2026</span>
-        </div>
-        
-        <h2 class="text-4xl font-serif text-neutral-900 mt-6 mb-12">Innovation Future</h2>
-
-        <div class="max-w-4xl mx-auto bg-white rounded-3xl border border-[#E6AF5D] p-10 shadow-2xl relative overflow-hidden group tool-card opacity-0 translate-y-8" id="innovation-card">
-            <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1620121692029-d088224ddc74?q=80&w=1000&auto=format&fit=crop')] bg-cover opacity-5 group-hover:opacity-10 transition-opacity duration-700"></div>
-            
-            <div class="relative z-10 flex flex-col md:flex-row items-center gap-10">
-                <div class="flex-1 text-left">
-                    <div class="inline-block px-3 py-1 bg-black text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-4">En Développement</div>
-                    <h3 class="text-3xl font-serif text-neutral-900 mb-4">L'Atelier Digital</h3>
-                    <p class="text-neutral-500 text-sm leading-loose">
-                        Un visualisateur 3D temps réel permettant de projeter les textures sur des environnements virtuels (Salles de bain, Salons) directement en showroom. Le futur de la vente conseil.
+        <!-- CARD 5: AI VISUALIZER (Innovation) -->
+        <a href="{{ route('tools.visualizer.index') }}" class="block">
+            <article class="tool-card rounded-3xl p-8 relative overflow-hidden group">
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-[#E6AF5D]/20 rounded-full blur-3xl transition-opacity opacity-0 group-hover:opacity-100 pointer-events-none"></div>
+                
+                <div class="flex justify-between items-start mb-8">
+                    <div class="icon-box w-14 h-14 rounded-2xl bg-neutral-900 text-[#E6AF5D] flex items-center justify-center shadow-sm border border-neutral-800">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                    <span class="text-[10px] font-bold uppercase tracking-wide text-white bg-black px-2 py-1 rounded">Beta</span>
+                </div>
+                
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold text-neutral-900 mb-2">Visualisateur IA</h3>
+                    <p class="text-sm text-neutral-500 leading-relaxed">
+                        Projection instantanée de carrelage sur photo client. Outil d'aide à la vente par Intelligence Artificielle.
                     </p>
                 </div>
                 
-                <div class="w-full md:w-1/3 aspect-square bg-neutral-100 rounded-2xl flex items-center justify-center relative overflow-hidden border border-neutral-200">
-                    <!-- Abstract Scanning Animation -->
-                    <div class="absolute top-0 left-0 w-full h-1 bg-[#E6AF5D] shadow-[0_0_20px_#E6AF5D] z-20 animate-[scan_3s_ease-in-out_infinite]"></div>
-                    <svg class="w-16 h-16 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <div class="mt-8 pt-6 border-t border-neutral-50 flex items-center text-xs font-bold text-neutral-900 uppercase tracking-widest group-hover:text-[#E6AF5D] transition-colors">
+                    Lancer <svg class="w-3 h-3 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                 </div>
-            </div>
-        </div>
+            </article>
+        </a>
+
     </div>
 
 </div>

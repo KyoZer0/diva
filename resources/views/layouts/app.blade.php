@@ -9,6 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -27,6 +28,7 @@
         .nav-link:hover { background-color: #F3F4F6; color: #111827; }
         .nav-link.active { background-color: #FFFBEB; color: #B45309; font-weight: 600; border: 1px solid rgba(230, 175, 93, 0.2); }
         .nav-link.active svg { color: #E6AF5D; }
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="text-gray-900">
@@ -114,6 +116,16 @@
             </div>
             @endif
 
+            @if(!auth()->user()->isAdmin())
+                    <!-- Quick Action: Add Client (Reps Only - Top) -->
+                    <div class="mb-6 px-2">
+                        <a href="{{ route('clients.create') }}" class="flex items-center justify-center w-full py-3 bg-neutral-900 text-white rounded-xl hover:bg-black transition-all group shadow-md hover:shadow-lg border border-neutral-800">
+                            <svg class="w-5 h-5 mr-2 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            <span class="font-bold text-sm">Nouveau Client</span>
+                        </a>
+                    </div>
+                @endif
+
             <!-- TOOLS (Shared) -->
             <div>
                 <h3 class="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Outils</h3>
@@ -128,12 +140,48 @@
                     <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                     Générateur Étiquettes
                 </a>
+                <a href="{{ route('tools.visualizer.index') }}" class="nav-link {{ request()->routeIs('tools.visualizer.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    Visualisateur IA
+                </a>
                 @endif
+                
+                <!-- Navigation Links -->
+                
+                <a href="{{ route('clients.index') }}" class="nav-link {{ request()->routeIs('clients.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    Base Clients
+                </a>
                 
                 <a href="{{ route('products.catalog') }}" class="nav-link {{ request()->routeIs('products.catalog') ? 'active' : '' }}">
                     <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                     Catalogue
                 </a>
+
+                <!-- Sales Cockpit (Blurred / Under Dev) -->
+                @if(auth()->user()->isAdmin())
+                     <!-- Full Access for Admin -->
+                    <a href="{{ route('tools.sales.index') }}" class="nav-link {{ request()->routeIs('tools.sales.index') ? 'active' : '' }}">
+                        <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        Sales Cockpit
+                    </a>
+                @else
+                    <!-- Blurred for others -->
+                    <div class="relative group cursor-not-allowed opacity-60 grayscale hover:grayscale-0 transition-all duration-300">
+                        <a href="#" onclick="return false;" class="nav-link blur-[2px] pointer-events-none select-none">
+                            <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            Sales Cockpit
+                        </a>
+                        <!-- Overlay Badge -->
+                        <div class="absolute inset-0 flex items-center justify-center z-10">
+                            <span class="bg-neutral-900/90 text-white text-[9px] font-bold px-2 py-1 rounded-full uppercase tracking-wider border border-white/10 shadow-lg backdrop-blur-md">
+                                Bientôt
+                            </span>
+                        </div>
+                    </div>
+                @endif
+                
+                <!-- Quick Action Removed -->
 
                 <a href="{{ route('documentation') }}" target="_blank" class="nav-link">
                     <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
